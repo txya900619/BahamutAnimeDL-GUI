@@ -3,7 +3,7 @@ the Bahamut Anime Downloader GUI version, build by go package lorca and vue.js
 ## the Frontend is from [this repo](https://github.com/txya900619/BahamutAnimeDL-frontend)
 ## How to build this on my computer?
 1. `go generate`
-2. `go build
+2. `go build`
 ## I don't want to build~
 1. `go generate`
 2. `go run main.go`
