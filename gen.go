@@ -5,5 +5,5 @@ package main
 import "github.com/zserge/lorca"
 
 func main() {
-	lorca.Embed("main", "assets.go", "frontend/dist")
+	lorca.Embed("main", "assets.go", "dist")
 }
