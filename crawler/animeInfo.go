@@ -25,6 +25,7 @@ func GetAllAnimeList() []model.Anime {
 
 	c.Visit("https://ani.gamer.com.tw/animeList.php")
 	c.Wait()
+	return animeList
 }
 func GetNewAnimeList() []model.NewAnime {
 	animeList := make([]model.NewAnime, 0)
