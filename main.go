@@ -20,7 +20,9 @@ var AnimeList []model.Anime
 
 func init() {
 	NewAnimeList = crawler.GetNewAnimeList()
-	AnimeList = crawler.GetAllAnimeList()
+	go func() {
+		AnimeList = crawler.GetAllAnimeList()
+	}()
 }
 
 func main() {
@@ -35,7 +37,13 @@ func main() {
 	}
 	defer app.Close()
 
-	app.Bind("getAnimeList", utilities.ToJson(NewAnimeList))
+	app.Bind("getNewAnimeList", func() string {
+		return utilities.ToJson(NewAnimeList)
+	})
+	app.Bind("getAllAnimeList", func() string {
+		return utilities.ToJson(AnimeList)
+	})
+
 	net, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		log.Fatal(err)

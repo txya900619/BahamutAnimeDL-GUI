@@ -1,14 +1,14 @@
 package model
 
 type AnimeInfo struct {
-	Title string `json.go:"title"`
-	Img   string `json.go:"img"`
+	Title string `json:"title"`
+	Img   string `json:"img"`
 }
 type NewAnime struct {
 	AnimeInfo
-	Sn string
+	Sn string `json:"sn"`
 }
 type Anime struct {
 	AnimeInfo
-	Ref string
+	Ref string `json:"ref"`
 }

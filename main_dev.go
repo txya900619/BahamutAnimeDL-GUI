@@ -17,7 +17,9 @@ var AnimeList []model.Anime
 
 func init() {
 	NewAnimeList = crawler.GetNewAnimeList()
-	AnimeList = crawler.GetAllAnimeList()
+	go func() {
+		AnimeList = crawler.GetAllAnimeList()
+	}()
 }
 
 func main() {
@@ -33,7 +35,12 @@ func main() {
 	}
 	defer app.Close()
 
-	app.Bind("getNewAnimeList", utilities.ToJson(NewAnimeList))
+	app.Bind("getNewAnimeList", func() string {
+		return utilities.ToJson(NewAnimeList)
+	})
+	app.Bind("getAllAnimeList", func() string {
+		return utilities.ToJson(AnimeList)
+	})
 
 	app.Load(fmt.Sprintf("http://%s", "127.0.0.1:8080"))
 	<-app.Done()
