@@ -12,7 +12,8 @@ func GetAllAnimeList() []model.Anime {
 	c.OnHTML("ul.anime_list>li", func(element *colly.HTMLElement) {
 		anime := model.Anime{}
 		anime.Ref = strings.Split(element.ChildAttr("a", "href"), "=")[1]
-		anime.Img = element.ChildAttr("a>div.pic", "data-bg")
+		anime.RemoteImg = strings.Split(element.ChildAttr("a>div.pic", "data-bg"), "?")[0]
+		anime.Img = "/assets/" + strings.Split(anime.RemoteImg, "/")[strings.Count(anime.RemoteImg, "/")]
 		anime.Title = element.ChildText("div.info>b")
 		animeList = append(animeList, anime)
 	})
