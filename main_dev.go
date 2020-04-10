@@ -28,7 +28,7 @@ func main() {
 	if runtime.GOOS == "linux" {
 		args = append(args, "--class=Lorca")
 	}
-
+	args = append(args, "--disable-translate")
 	app, err := lorca.New("", "", 1200, 800, args...)
 	if err != nil {
 		log.Fatal(err)
