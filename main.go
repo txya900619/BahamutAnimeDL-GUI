@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"runtime"
+	"strings"
 )
 
 var NewAnimeList []model.NewAnime
@@ -30,7 +31,8 @@ func main() {
 	if runtime.GOOS == "linux" {
 		args = append(args, "--class=Lorca")
 	}
-	args = append(args, "--disable-translate")
+	args = append(args, "--disable-features=TranslateUI")
+
 	app, err := lorca.New("", "", 1200, 800, args...)
 	if err != nil {
 		log.Fatal(err)
@@ -43,7 +45,22 @@ func main() {
 	app.Bind("getAllAnimeList", func() string {
 		return utilities.ToJson(AnimeList)
 	})
+	app.Bind("getAnimesByPage", func(page int) string {
+		return utilities.ToJson(AnimeList[(page-1)*18 : page*18])
+	})
+	app.Bind("getMaxPage", func() int {
+		return len(AnimeList)/18 + 1
+	})
 
+	app.Bind("getAnimesByFilter", func(filter string) string {
+		filteredAnimes := make([]model.Anime, 0)
+		for _, v := range AnimeList {
+			if strings.Contains(v.Title, filter) {
+				filteredAnimes = append(filteredAnimes, v)
+			}
+		}
+		return utilities.ToJson(filteredAnimes)
+	})
 	net, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		log.Fatal(err)

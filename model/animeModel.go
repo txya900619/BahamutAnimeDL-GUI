@@ -10,6 +10,5 @@ type NewAnime struct {
 }
 type Anime struct {
 	AnimeInfo
-	Ref       string `json:"ref"`
-	RemoteImg string `json:"remote_img"`
+	Ref string `json:"ref"`
 }
