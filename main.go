@@ -61,6 +61,11 @@ func main() {
 		}
 		return utilities.ToJson(filteredAnimes)
 	})
+
+	app.Bind("getRealSn", func(ref string) string {
+		return crawler.GetRealSn(ref)
+	})
+
 	net, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		log.Fatal(err)

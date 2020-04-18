@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func getRealSn(ref string) string {
+func GetRealSn(ref string) string {
 	resp, err := http.Get("https://ani.gamer.com.tw/animeRef.php?sn=" + ref)
 	if err != nil {
 		log.Fatal(err)
