@@ -50,9 +50,10 @@ func main() {
 	})
 
 	app.Bind("getAnimesByFilter", func(filter string) string {
+		filter = strings.ToLower(filter)
 		filteredAnimes := make([]model.Anime, 0)
 		for _, v := range AnimeList {
-			if strings.Contains(v.Title, filter) {
+			if strings.Contains(strings.ToLower(v.Title), filter) {
 				filteredAnimes = append(filteredAnimes, v)
 			}
 		}
