@@ -12,5 +12,6 @@ BahamutAnimeDL-GUI
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 assets.go
+saveData.sqlite
 # Depend            ency directories (remove the comment below to include it)
 # vendor/

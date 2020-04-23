@@ -1,8 +1,11 @@
--- +migrations Up
+-- +migrate Up
+
 CREATE TABLE downloadedAnimations(
-    id INTEGER PRIMARY KEY AUTOINCREMENT ,
-    title TEXT NOT NULL ,
-    part INTEGER NOT NULL
+                                     id INTEGER PRIMARY KEY AUTOINCREMENT ,
+                                     title TEXT NOT NULL ,
+                                     part INTEGER NOT NULL
 );
--- +migrations Down
+
+-- +migrate Down
+
 DROP TABLE downloadedAnimations;

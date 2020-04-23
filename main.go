@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/markbates/pkger"
 	"github.com/txya900619/BahamutAnimeDL-GUI/crawler"
 	"github.com/txya900619/BahamutAnimeDL-GUI/model"
 	"github.com/txya900619/BahamutAnimeDL-GUI/utilities"
@@ -73,7 +74,7 @@ func main() {
 	}
 	defer net.Close()
 
-	go http.Serve(net, http.FileServer(FS))
+	go http.Serve(net, http.FileServer(pkger.Dir("/dist")))
 	app.Load(fmt.Sprintf("http://%s", net.Addr()))
 	<-app.Done()
 }
