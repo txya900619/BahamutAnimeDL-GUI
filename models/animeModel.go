@@ -1,4 +1,4 @@
-package model
+package models
 
 type AnimeInfo struct {
 	Title string `json:"title"`

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/markbates/pkger"
 	"github.com/txya900619/BahamutAnimeDL-GUI/crawler"
-	"github.com/txya900619/BahamutAnimeDL-GUI/model"
+	"github.com/txya900619/BahamutAnimeDL-GUI/models"
 	"github.com/txya900619/BahamutAnimeDL-GUI/utilities"
 	"github.com/zserge/lorca"
 	"log"
@@ -17,8 +17,8 @@ import (
 	"strings"
 )
 
-var NewAnimeList []model.NewAnime
-var AnimeList []model.Anime
+var NewAnimeList []models.NewAnime
+var AnimeList []models.Anime
 
 func init() {
 	NewAnimeList = crawler.GetNewAnimeList()
@@ -54,7 +54,7 @@ func main() {
 	})
 
 	app.Bind("getAnimesByFilter", func(filter string) string {
-		filteredAnimes := make([]model.Anime, 0)
+		filteredAnimes := make([]models.Anime, 0)
 		filter = strings.ToLower(filter)
 		for _, v := range AnimeList {
 			if strings.Contains(strings.ToLower(v.Title), filter) {

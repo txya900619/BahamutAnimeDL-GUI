@@ -1,0 +1,6 @@
+output = "database/models"
+no-tests = true
+
+[sqlite3]
+    dbname = "./saveData.sqlite"
+    blacklist = ["gorp_migrations","sqlite_master","sqlite_sequence"]
