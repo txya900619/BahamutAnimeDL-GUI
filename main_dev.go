@@ -64,6 +64,10 @@ func main() {
 		return crawler.GetRealSn(ref)
 	})
 
+	app.Bind("getAnimeAllSn", func(sn string) string {
+		return utilities.ToJson(crawler.GetSnsByOneSn(sn))
+	})
+
 	app.Load(fmt.Sprintf("http://%s", "127.0.0.1:8080"))
 	<-app.Done()
 }

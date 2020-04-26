@@ -12,3 +12,7 @@ type Anime struct {
 	AnimeInfo
 	Ref string `json:"ref"`
 }
+type Sn struct {
+	Sn     string `json:"sn"`
+	Number string `json:"number"`
+}

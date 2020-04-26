@@ -68,6 +68,10 @@ func main() {
 		return crawler.GetRealSn(ref)
 	})
 
+	app.Bind("getAnimeAllSn", func(sn string) string {
+		return utilities.ToJson(crawler.GetSnsByOneSn(sn))
+	})
+
 	net, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		log.Fatal(err)
