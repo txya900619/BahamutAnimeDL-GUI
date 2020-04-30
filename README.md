@@ -8,4 +8,4 @@ the Bahamut Anime Downloader GUI version, build by go package lorca and vue.js
 ## I want to try my UI, what should I do
 1. `use node to serve your frontend`
 2. change main_dev.go :8080 to your npm serve port
-3. you can `go run main_dev` or `go build -tags dev`
+3. you can `go run main_dev.go` or `go build -tags dev`
