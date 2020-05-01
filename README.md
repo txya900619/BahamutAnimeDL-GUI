@@ -11,3 +11,10 @@ the Bahamut Anime Downloader GUI version, build by go package lorca and vue.js
 1. `use node to serve your frontend`
 2. change main_dev.go :8080 to your npm serve port
 3. you can `go run main_dev.go` or `go build -tags dev`
+## Pakages which I using in project
+- [lorca](https://github.com/gocolly/colly), a pakage let you can build desktop application in go, base on chrome
+- [colly](https://github.com/gocolly/colly), a pakage for crawler
+- [pkger](https://github.com/markbates/pkger), a pakege can embed static files to binary 
+- [go-sqlite3](https://github.com/mattn/go-sqlite3), a sqlite3 dirver for go
+- [sql-migrate](https://github.com/rubenv/sql-migrate), database migrate tool in go
+- [sqlboiler](https://github.com/volatiletech/sqlboiler), a orm which is datbase-first in go
