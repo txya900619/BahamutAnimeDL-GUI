@@ -17,4 +17,4 @@ the Bahamut Anime Downloader GUI version, build by go package lorca and vue.js
 - [pkger](https://github.com/markbates/pkger), a pakege can embed static files to binary 
 - [go-sqlite3](https://github.com/mattn/go-sqlite3), a sqlite3 dirver for go
 - [sql-migrate](https://github.com/rubenv/sql-migrate), database migrate tool in go
-- [sqlboiler](https://github.com/volatiletech/sqlboiler), a orm which is datbase-first in go
+- [sqlboiler](https://github.com/volatiletech/sqlboiler), a datbase-first orm in go
