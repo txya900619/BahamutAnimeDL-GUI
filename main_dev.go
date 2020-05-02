@@ -18,8 +18,9 @@ var AnimeList []models.Anime
 
 func init() {
 	NewAnimeList = crawler.GetNewAnimeList()
-	AnimeList = crawler.GetAllAnimeList()
-
+	go func() {
+		AnimeList = crawler.GetAllAnimeList()
+	}()
 }
 
 func main() {
