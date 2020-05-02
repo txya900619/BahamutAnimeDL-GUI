@@ -1,9 +1,9 @@
 -- +migrate Up
 CREATE TABLE downloadQueue(
-    sn INTEGER NOT NULL ,
+    sn INTEGER PRIMARY KEY NOT NULL ,
     name TEXT NOT NULL ,
-    ep INTEGER NOT NULL ,
-    sequence INTEGER PRIMARY KEY ,
+    ep TEXT NOT NULL ,
+    sequence INTEGER NOT NULL ,
     Downloading INTEGER NOT NULL DEFAULT 0
 );
 -- +migrate Down

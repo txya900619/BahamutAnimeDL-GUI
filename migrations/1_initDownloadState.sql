@@ -1,10 +1,10 @@
 -- +migrate Up
-CREATE TABLE downloadStatus(
+CREATE TABLE downloadState(
   id INTEGER PRIMARY KEY  AUTOINCREMENT ,
   sn INTEGER NOT NULL ,
-  part INTEGER NOT NULL ,
+  part TEXT NOT NULL ,
   success INTEGER NOT NULL DEFAULT 0
 );
 
 -- +migrate Down
-DROP TABLE downloadStatus;
+DROP TABLE downloadState;

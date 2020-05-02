@@ -25,7 +25,7 @@ import (
 type DownloadedAnimation struct {
 	ID    null.Int64 `boil:"id" json:"id,omitempty" toml:"id" yaml:"id,omitempty"`
 	Title string     `boil:"title" json:"title" toml:"title" yaml:"title"`
-	Part  int64      `boil:"part" json:"part" toml:"part" yaml:"part"`
+	Part  string     `boil:"part" json:"part" toml:"part" yaml:"part"`
 
 	R *downloadedAnimationR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L downloadedAnimationL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -46,11 +46,11 @@ var DownloadedAnimationColumns = struct {
 var DownloadedAnimationWhere = struct {
 	ID    whereHelpernull_Int64
 	Title whereHelperstring
-	Part  whereHelperint64
+	Part  whereHelperstring
 }{
 	ID:    whereHelpernull_Int64{field: "\"downloadedAnimations\".\"id\""},
 	Title: whereHelperstring{field: "\"downloadedAnimations\".\"title\""},
-	Part:  whereHelperint64{field: "\"downloadedAnimations\".\"part\""},
+	Part:  whereHelperstring{field: "\"downloadedAnimations\".\"part\""},
 }
 
 // DownloadedAnimationRels is where relationship names are stored.
