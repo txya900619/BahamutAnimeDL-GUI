@@ -1,4 +1,3 @@
-//go:generate go run -tags generate gen.go
 //+build !dev
 
 package main
@@ -9,11 +8,10 @@ import (
 	"github.com/txya900619/BahamutAnimeDL-GUI/crawler"
 	"github.com/txya900619/BahamutAnimeDL-GUI/models"
 	"github.com/txya900619/BahamutAnimeDL-GUI/utilities"
-	"github.com/zserge/lorca"
+	"github.com/zserge/webview"
 	"log"
 	"net"
 	"net/http"
-	"runtime"
 	"strings"
 )
 
@@ -28,32 +26,27 @@ func init() {
 }
 
 func main() {
-	args := []string{}
-	if runtime.GOOS == "linux" {
-		args = append(args, "--class=Lorca")
-	}
-	args = append(args, "--disable-features=TranslateUI")
+	debug:=true
+	w := webview.New(debug)
+	defer w.Destroy()
+	w.SetTitle("BahaDL")
+	w.SetSize(1200,800,webview.HintNone)
 
-	app, err := lorca.New("", "", 1200, 800, args...)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer app.Close()
 
-	app.Bind("getNewAnimeList", func() string {
+	w.Bind("getNewAnimeList", func() string {
 		return utilities.ToJson(NewAnimeList)
 	})
-	app.Bind("getAllAnimeList", func() string {
+	w.Bind("getAllAnimeList", func() string {
 		return utilities.ToJson(AnimeList)
 	})
-	app.Bind("getAnimesByPage", func(page int) string {
+	w.Bind("getAnimesByPage", func(page int) string {
 		return utilities.ToJson(AnimeList[(page-1)*18 : page*18])
 	})
-	app.Bind("getMaxPage", func() int {
+	w.Bind("getMaxPage", func() int {
 		return len(AnimeList)/18 + 1
 	})
 
-	app.Bind("getAnimesByFilter", func(filter string) string {
+	w.Bind("getAnimesByFilter", func(filter string) string {
 		filteredAnimes := make([]models.Anime, 0)
 		filter = strings.ToLower(filter)
 		for _, v := range AnimeList {
@@ -64,11 +57,11 @@ func main() {
 		return utilities.ToJson(filteredAnimes)
 	})
 
-	app.Bind("getRealSn", func(ref string) string {
+	w.Bind("getRealSn", func(ref string) string {
 		return crawler.GetRealSn(ref)
 	})
 
-	app.Bind("getAnimeAllSn", func(sn string) string {
+	w.Bind("getAnimeAllSn", func(sn string) string {
 		return utilities.ToJson(crawler.GetSnsByOneSn(sn))
 	})
 
@@ -79,6 +72,6 @@ func main() {
 	defer net.Close()
 
 	go http.Serve(net, http.FileServer(pkger.Dir("/dist")))
-	app.Load(fmt.Sprintf("http://%s", net.Addr()))
-	<-app.Done()
+	w.Navigate(fmt.Sprintf("http://%s", net.Addr()))
+	w.Run()
 }

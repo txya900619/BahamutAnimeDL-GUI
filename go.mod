@@ -25,6 +25,7 @@ require (
 	github.com/volatiletech/null v8.0.0+incompatible
 	github.com/volatiletech/sqlboiler v3.7.0+incompatible
 	github.com/zserge/lorca v0.1.9
+	github.com/zserge/webview v0.0.0-20200410160118-50e4bcc420ab
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
 	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
