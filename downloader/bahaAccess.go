@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-func getDeviceID() (deviceID string, cookie *http.Cookie) {
-	resp, err := http.Get("https://ani.gamer.com.tw/ajax/getdeviceid.php")
+func getDeviceID(client *http.Client) (deviceID string) {
+	resp, err := client.Get("https://ani.gamer.com.tw/ajax/getdeviceid.php")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,22 +22,17 @@ func getDeviceID() (deviceID string, cookie *http.Cookie) {
 	}
 	deviceID = strings.Split(strings.Split(string(body), ":\"")[1], "\"")[0]
 
-	for _, respCookie := range resp.Cookies() {
-		if respCookie.Name == "nologinuser" {
-			cookie = respCookie
-		}
-	}
 	return
 }
 
-func accessAD(client *http.Client, sn int, deviceID string) {
-	if vip, _ := checkADStatus(client, sn, deviceID); !vip {
-		seeAD(client, sn, deviceID)
+func (client *animationDownloadClient) accessAD() {
+	if vip, _ := checkADStatus(client); !vip {
+		seeAD(client)
 	}
 }
 
-func checkADStatus(client *http.Client, sn int, deviceID string) (vip, seenAD bool) {
-	resp, err := client.Get("https://ani.gamer.com.tw/ajax/token.php?adID=0&sn=" + strconv.Itoa(sn) + "&device=" + deviceID + "&hash=" + randomHash())
+func checkADStatus(client *animationDownloadClient) (vip, seenAD bool) {
+	resp, err := client.Get("https://ani.gamer.com.tw/ajax/token.php?adID=0&sn=" + client.sn + "&device=" + client.deviceID + "&hash=" + randomHash())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,16 +50,16 @@ func checkADStatus(client *http.Client, sn int, deviceID string) (vip, seenAD bo
 	return
 }
 
-func seeAD(client *http.Client, sn int, deviceID string) {
-	resp, _ := client.Get("https://ani.gamer.com.tw/ajax/videoCastcishu.php?sn=" + strconv.Itoa(sn) + "&s=194699")
+func seeAD(client *animationDownloadClient) {
+	resp, _ := client.Get("https://ani.gamer.com.tw/ajax/videoCastcishu.php?sn=" + client.sn + "&s=194699")
 	resp.Body.Close()
 
 	time.Sleep(8 * time.Second)
 
-	resp, _ = client.Get("https://ani.gamer.com.tw/ajax/videoCastcishu.php?sn=" + strconv.Itoa(sn) + "&s=194699&ad=end")
+	resp, _ = client.Get("https://ani.gamer.com.tw/ajax/videoCastcishu.php?sn=" + client.sn + "&s=194699&ad=end")
 	resp.Body.Close()
 
-	if _, seenAD := checkADStatus(client, sn, deviceID); !seenAD {
-		seeAD(client, sn, deviceID)
+	if _, seenAD := checkADStatus(client); !seenAD {
+		seeAD(client)
 	}
 }
