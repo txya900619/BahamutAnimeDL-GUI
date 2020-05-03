@@ -3,27 +3,10 @@ package downloader
 import (
 	"io/ioutil"
 	"log"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 )
-
-func getDeviceID(client *http.Client) (deviceID string) {
-	resp, err := client.Get("https://ani.gamer.com.tw/ajax/getdeviceid.php")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	deviceID = strings.Split(strings.Split(string(body), ":\"")[1], "\"")[0]
-
-	return
-}
 
 func (client *animationDownloadClient) accessAD() {
 	if vip, _ := checkADStatus(client); !vip {
