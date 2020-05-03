@@ -2,112 +2,110 @@ package downloader
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
-	"github.com/grafov/m3u8"
+	"io"
 	"io/ioutil"
 	"log"
+	"os"
+	"path"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 func DownloadAnimation(sn int) {
 	resolution := "720"
+	maxThreads := 32
 	animationDLClient := newAnimationDownloadClient(strconv.Itoa(sn))
 	animationDLClient.accessAD()
-	animationDLClient.getAnimationChunkUrlsAndKey(resolution)
+	chunkUrls, key := animationDLClient.getAnimationChunkUrlsAndKey(resolution)
+	animationDLClient.concurrentDownloadAnimationChunk(chunkUrls, key, maxThreads)
+
 }
 
-func (client *animationDownloadClient) getAnimationChunkUrlsAndKey(resolution string) (chunkUrls []string, key []byte) {
-	chunksListUrl := findChunkListMatchResolution(client, resolution)
-	resp, err := client.Get(chunksListUrl)
-	if err != nil {
-		log.Fatal(err)
-	}
+func (client *animationDownloadClient) concurrentDownloadAnimationChunk(chunkUrls []string, key []byte, maxThreads int) {
+	var wg sync.WaitGroup
+	ch := make(chan string)
+	wg.Add(maxThreads)
 
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	playList, listType, err := m3u8.Decode(*bytes.NewBuffer(body), true)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if listType == m3u8.MEDIA {
-		mediaPlayList := playList.(*m3u8.MediaPlaylist)
-
-		resp, err := client.Get(mediaPlayList.Key.URI)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer resp.Body.Close()
-		key, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		chunkUrlsPrefix := "https://gamer-cds.cdn.hinet.net/vod_gamer/_definst_/smil:gamer2/038222451ff0ea3d82f93f1c8d5a1afaed108cd7/hls-s-ae-2s.smil/"
-		for _, chunk := range mediaPlayList.Segments {
-			if chunk != nil {
-				chunkUrls = append(chunkUrls, chunkUrlsPrefix+chunk.URI)
+	for i := 0; i < maxThreads; i++ {
+		go func() {
+			for {
+				url, ok := <-ch
+				if !ok {
+					wg.Done()
+					return
+				}
+				for {
+					if downloadAnimationChunk(client, url, key) {
+						break
+					}
+				}
 			}
-		}
-		fmt.Println(chunkUrls)
+		}()
 	}
 
-	return
+	for _, url := range chunkUrls {
+		ch <- url
+	}
+	close(ch)
+	wg.Wait()
 }
 
-func findChunkListMatchResolution(client *animationDownloadClient, resolution string) (chunkListUrl string) {
-	m3u8Url := getAnimationM3u8Url(client)
-	resp, err := client.Get(m3u8Url)
+func downloadAnimationChunk(client *animationDownloadClient, url string, key []byte) (success bool) {
+	fileName := strings.Split(path.Base(url), "?")[0]
+	fileState, err := os.Stat("./.temp/" + fileName)
+	if err == nil && fileState.Size() != 0 {
+		return true
+	}
+
+	newChunk, err := os.Create("./.temp/" + fileName)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	resp, err := client.Get(url)
+	if err != nil {
+		_ = newChunk.Close()
+		_ = os.Remove("./.temp/" + fileName)
+		time.Sleep(500 * time.Millisecond)
+		return false
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		_ = newChunk.Close()
+		_ = os.Remove("./.temp/" + fileName)
+		time.Sleep(500 * time.Millisecond)
+		return false
 	}
 
-	playList, listType, err := m3u8.Decode(*bytes.NewBuffer(body), true)
+	body, err = decryptAES128(body, key)
 	if err != nil {
-		log.Fatal(err)
+		_ = newChunk.Close()
+		_ = os.Remove("./.temp/" + fileName)
+		time.Sleep(500 * time.Millisecond)
+		return false
 	}
-	if listType == m3u8.MASTER {
-		masterPlayList := playList.(*m3u8.MasterPlaylist)
-		for _, chunkList := range masterPlayList.Variants {
-			listResolution := strings.Split(chunkList.Resolution, "x")[1]
-			if listResolution == resolution {
-				chunkListUrl = strings.Split(m3u8Url, "playlist.m3u8")[0] + chunkList.URI
-			}
+
+	syncByte := uint8(71) //0x47
+	bodyLen := len(body)
+	for j := 0; j < bodyLen; j++ {
+		if body[j] == syncByte {
+			body = body[j:]
+			break
 		}
 	}
 
-	return
-}
-
-func getAnimationM3u8Url(client *animationDownloadClient) (m3u8ListUrl string) {
-	resp, err := client.Get("https://ani.gamer.com.tw/ajax/m3u8.php?sn=" + client.sn + "&device=" + client.deviceID)
+	_, err = io.Copy(newChunk, bytes.NewReader(body))
 	if err != nil {
-		log.Fatal(err)
+		_ = newChunk.Close()
+		_ = os.Remove("./.temp/" + fileName)
+		time.Sleep(500 * time.Millisecond)
+		return false
 	}
 
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	jsonParse := make(map[string]string)
-	err = json.Unmarshal(body, &jsonParse)
-	if err != nil {
-		log.Fatal(err)
-	}
-	m3u8ListUrl = "https:" + jsonParse["src"]
-
-	return
+	_ = newChunk.Close()
+	return true
 }

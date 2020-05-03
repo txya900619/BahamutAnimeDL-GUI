@@ -29,15 +29,15 @@ func newAnimationDownloadClient(sn string) (newAnimationDownloadClient *animatio
 	return
 }
 
-func (clint *animationDownloadClient) Get(url string) (resp *http.Response, err error) {
+func (client *animationDownloadClient) Get(url string) (resp *http.Response, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36")
-	req.Header.Add("referer", "https://ani.gamer.com.tw/animeVideo.php?sn="+clint.sn)
+	req.Header.Add("referer", "https://ani.gamer.com.tw/animeVideo.php?sn="+client.sn)
 	req.Header.Add("origin", "https://ani.gamer.com.tw")
-	resp, err = clint.Do(req)
+	resp, err = client.Do(req)
 	return
 }
 

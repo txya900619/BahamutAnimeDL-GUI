@@ -11,9 +11,10 @@ import (
 	dbModels "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
 	"github.com/txya900619/BahamutAnimeDL-GUI/models"
 	"github.com/txya900619/BahamutAnimeDL-GUI/utilities"
-	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/zserge/lorca"
 	"log"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -27,6 +28,14 @@ func init() {
 	db = database.ConnectSqlite()
 	NewAnimeList = crawler.GetNewAnimeList()
 	AnimeList = crawler.GetAllAnimeList()
+
+	if _, err := os.Stat("./.temp"); os.IsNotExist(err) {
+		os.Mkdir("./.temp", os.ModeDir)
+		if runtime.GOOS == "windows" {
+			utilities.HideFolderForWindows("./.temp")
+		}
+	}
+
 }
 
 func main() {
