@@ -1,5 +1,4 @@
-//go:generate go run -tags generate gen.go
-//+build !dev
+// +build !dev
 
 package main
 

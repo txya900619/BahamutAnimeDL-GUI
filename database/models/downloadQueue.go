@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/volatiletech/null"
 	"github.com/volatiletech/sqlboiler/boil"
 	"github.com/volatiletech/sqlboiler/queries"
 	"github.com/volatiletech/sqlboiler/queries/qm"
@@ -23,11 +22,12 @@ import (
 
 // DownloadQueue is an object representing the database table.
 type DownloadQueue struct {
-	SN          int64      `boil:"sn" json:"sn" toml:"sn" yaml:"sn"`
-	Name        string     `boil:"name" json:"name" toml:"name" yaml:"name"`
-	Ep          int64      `boil:"ep" json:"ep" toml:"ep" yaml:"ep"`
-	Sequence    null.Int64 `boil:"sequence" json:"sequence,omitempty" toml:"sequence" yaml:"sequence,omitempty"`
-	Downloading int64      `boil:"Downloading" json:"Downloading" toml:"Downloading" yaml:"Downloading"`
+	SN          int64  `boil:"sn" json:"sn" toml:"sn" yaml:"sn"`
+	Name        string `boil:"name" json:"name" toml:"name" yaml:"name"`
+	Ep          string `boil:"ep" json:"ep" toml:"ep" yaml:"ep"`
+	Sequence    int64  `boil:"sequence" json:"sequence" toml:"sequence" yaml:"sequence"`
+	Downloading int64  `boil:"downloading" json:"downloading" toml:"downloading" yaml:"downloading"`
+	Stop        int64  `boil:"stop" json:"stop" toml:"stop" yaml:"stop"`
 
 	R *downloadQueueR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L downloadQueueL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -39,12 +39,14 @@ var DownloadQueueColumns = struct {
 	Ep          string
 	Sequence    string
 	Downloading string
+	Stop        string
 }{
 	SN:          "sn",
 	Name:        "name",
 	Ep:          "ep",
 	Sequence:    "sequence",
-	Downloading: "Downloading",
+	Downloading: "downloading",
+	Stop:        "stop",
 }
 
 // Generated where
@@ -81,41 +83,20 @@ func (w whereHelperstring) IN(slice []string) qm.QueryMod {
 	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
 }
 
-type whereHelpernull_Int64 struct{ field string }
-
-func (w whereHelpernull_Int64) EQ(x null.Int64) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, false, x)
-}
-func (w whereHelpernull_Int64) NEQ(x null.Int64) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, true, x)
-}
-func (w whereHelpernull_Int64) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_Int64) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
-func (w whereHelpernull_Int64) LT(x null.Int64) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpernull_Int64) LTE(x null.Int64) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpernull_Int64) GT(x null.Int64) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpernull_Int64) GTE(x null.Int64) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
-
 var DownloadQueueWhere = struct {
 	SN          whereHelperint64
 	Name        whereHelperstring
-	Ep          whereHelperint64
-	Sequence    whereHelpernull_Int64
+	Ep          whereHelperstring
+	Sequence    whereHelperint64
 	Downloading whereHelperint64
+	Stop        whereHelperint64
 }{
 	SN:          whereHelperint64{field: "\"downloadQueue\".\"sn\""},
 	Name:        whereHelperstring{field: "\"downloadQueue\".\"name\""},
-	Ep:          whereHelperint64{field: "\"downloadQueue\".\"ep\""},
-	Sequence:    whereHelpernull_Int64{field: "\"downloadQueue\".\"sequence\""},
-	Downloading: whereHelperint64{field: "\"downloadQueue\".\"Downloading\""},
+	Ep:          whereHelperstring{field: "\"downloadQueue\".\"ep\""},
+	Sequence:    whereHelperint64{field: "\"downloadQueue\".\"sequence\""},
+	Downloading: whereHelperint64{field: "\"downloadQueue\".\"downloading\""},
+	Stop:        whereHelperint64{field: "\"downloadQueue\".\"stop\""},
 }
 
 // DownloadQueueRels is where relationship names are stored.
@@ -135,10 +116,10 @@ func (*downloadQueueR) NewStruct() *downloadQueueR {
 type downloadQueueL struct{}
 
 var (
-	downloadQueueAllColumns            = []string{"sn", "name", "ep", "sequence", "Downloading"}
-	downloadQueueColumnsWithoutDefault = []string{"sn", "name", "ep"}
-	downloadQueueColumnsWithDefault    = []string{"sequence", "Downloading"}
-	downloadQueuePrimaryKeyColumns     = []string{"sequence"}
+	downloadQueueAllColumns            = []string{"sn", "name", "ep", "sequence", "downloading", "stop"}
+	downloadQueueColumnsWithoutDefault = []string{"name", "ep", "sequence"}
+	downloadQueueColumnsWithDefault    = []string{"sn", "downloading", "stop"}
+	downloadQueuePrimaryKeyColumns     = []string{"sn"}
 )
 
 type (
@@ -424,7 +405,7 @@ func DownloadQueues(mods ...qm.QueryMod) downloadQueueQuery {
 
 // FindDownloadQueue retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindDownloadQueue(ctx context.Context, exec boil.ContextExecutor, sequence null.Int64, selectCols ...string) (*DownloadQueue, error) {
+func FindDownloadQueue(ctx context.Context, exec boil.ContextExecutor, sN int64, selectCols ...string) (*DownloadQueue, error) {
 	downloadQueueObj := &DownloadQueue{}
 
 	sel := "*"
@@ -432,10 +413,10 @@ func FindDownloadQueue(ctx context.Context, exec boil.ContextExecutor, sequence 
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"downloadQueue\" where \"sequence\"=?", sel,
+		"select %s from \"downloadQueue\" where \"sn\"=?", sel,
 	)
 
-	q := queries.Raw(query, sequence)
+	q := queries.Raw(query, sN)
 
 	err := q.Bind(ctx, exec, downloadQueueObj)
 	if err != nil {
@@ -507,20 +488,31 @@ func (o *DownloadQueue) Insert(ctx context.Context, exec boil.ContextExecutor, c
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "models: unable to insert into downloadQueue")
 	}
 
+	var lastID int64
 	var identifierCols []interface{}
 
 	if len(cache.retMapping) == 0 {
 		goto CacheNoHooks
 	}
 
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.SN = int64(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == downloadQueueMapping["sn"] {
+		goto CacheNoHooks
+	}
+
 	identifierCols = []interface{}{
-		o.Sequence,
+		o.SN,
 	}
 
 	if boil.IsDebug(ctx) {
@@ -683,7 +675,7 @@ func (o *DownloadQueue) Delete(ctx context.Context, exec boil.ContextExecutor) (
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), downloadQueuePrimaryKeyMapping)
-	sql := "DELETE FROM \"downloadQueue\" WHERE \"sequence\"=?"
+	sql := "DELETE FROM \"downloadQueue\" WHERE \"sn\"=?"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -780,7 +772,7 @@ func (o DownloadQueueSlice) DeleteAll(ctx context.Context, exec boil.ContextExec
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *DownloadQueue) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindDownloadQueue(ctx, exec, o.Sequence)
+	ret, err := FindDownloadQueue(ctx, exec, o.SN)
 	if err != nil {
 		return err
 	}
@@ -819,16 +811,16 @@ func (o *DownloadQueueSlice) ReloadAll(ctx context.Context, exec boil.ContextExe
 }
 
 // DownloadQueueExists checks if the DownloadQueue row exists.
-func DownloadQueueExists(ctx context.Context, exec boil.ContextExecutor, sequence null.Int64) (bool, error) {
+func DownloadQueueExists(ctx context.Context, exec boil.ContextExecutor, sN int64) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"downloadQueue\" where \"sequence\"=? limit 1)"
+	sql := "select exists(select 1 from \"downloadQueue\" where \"sn\"=? limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, sequence)
+		fmt.Fprintln(writer, sN)
 	}
-	row := exec.QueryRowContext(ctx, sql, sequence)
+	row := exec.QueryRowContext(ctx, sql, sN)
 
 	err := row.Scan(&exists)
 	if err != nil {

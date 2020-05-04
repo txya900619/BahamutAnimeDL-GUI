@@ -5,10 +5,8 @@ package models
 
 var TableNames = struct {
 	DownloadQueue        string
-	DownloadStatus       string
 	DownloadedAnimations string
 }{
 	DownloadQueue:        "downloadQueue",
-	DownloadStatus:       "downloadStatus",
 	DownloadedAnimations: "downloadedAnimations",
 }
