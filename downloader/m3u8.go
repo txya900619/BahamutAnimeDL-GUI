@@ -39,7 +39,7 @@ func (client *animationDownloadClient) getAnimationChunkUrlsAndKey(resolution st
 			log.Fatal(err)
 		}
 
-		chunkUrlsPrefix := "https://gamer-cds.cdn.hinet.net/vod_gamer/_definst_/smil:gamer2/038222451ff0ea3d82f93f1c8d5a1afaed108cd7/hls-s-ae-2s.smil/"
+		chunkUrlsPrefix := strings.Split(chunksListUrl, "chunklist")[0]
 		for _, chunk := range mediaPlayList.Segments {
 			if chunk != nil {
 				chunkUrls = append(chunkUrls, chunkUrlsPrefix+chunk.URI)
