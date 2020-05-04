@@ -1,4 +1,4 @@
-//+build dev
+// +build dev
 
 package main
 
@@ -32,7 +32,7 @@ func init() {
 	if _, err := os.Stat("./.temp"); os.IsNotExist(err) {
 		os.Mkdir("./.temp", os.ModeDir)
 		if runtime.GOOS == "windows" {
-			utilities.HideFolderForWindows("./.temp")
+			utilities.HideFolder("./.temp")
 		}
 	}
 

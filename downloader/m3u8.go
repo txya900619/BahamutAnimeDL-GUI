@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/grafov/m3u8"
 	"io/ioutil"
 	"log"

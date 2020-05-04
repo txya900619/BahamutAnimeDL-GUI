@@ -4,7 +4,8 @@ CREATE TABLE downloadQueue(
     name TEXT NOT NULL ,
     ep TEXT NOT NULL ,
     sequence INTEGER NOT NULL ,
-    Downloading INTEGER NOT NULL DEFAULT 0
+    downloading INTEGER NOT NULL DEFAULT 0 ,
+    stop INTEGER NOT NULL DEFAULT 0
 );
 -- +migrate Down
 DROP TABLE downloadQueue;

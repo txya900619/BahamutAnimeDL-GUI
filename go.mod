@@ -18,10 +18,11 @@ require (
 	github.com/rubenv/sql-migrate v0.0.0-20200429072036-ae26b214fa43
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/temoto/robotstxt v1.1.1 // indirect
+	github.com/volatiletech/sqlboiler v3.7.1+incompatible
 	github.com/volatiletech/sqlboiler/v4 v4.0.1
 	github.com/volatiletech/strmangle v0.0.1
 	github.com/zserge/lorca v0.1.9
 	golang.org/x/net v0.0.0-20200501053045-e0ff5e5a1de5 // indirect
-	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect
+	golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 )

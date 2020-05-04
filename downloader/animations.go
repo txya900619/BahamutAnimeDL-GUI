@@ -2,25 +2,80 @@ package downloader
 
 import (
 	"bytes"
+	"context"
+	dbModel "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-func DownloadAnimation(sn int) {
+func DownloadAnimation(sn int, stop chan string) {
 	resolution := "720"
 	maxThreads := 32
-	animationDLClient := newAnimationDownloadClient(strconv.Itoa(sn))
+	animationDLClient := newAnimationDownloadClient(strconv.Itoa(sn), stop)
 	animationDLClient.accessAD()
 	chunkUrls, key := animationDLClient.getAnimationChunkUrlsAndKey(resolution)
 	animationDLClient.concurrentDownloadAnimationChunk(chunkUrls, key, maxThreads)
+}
 
+func (client *animationDownloadClient) combineChunk(chunkUrls []string) {
+	mergedFile, err := os.Create("./temp/" + client.sn + "/main.ts")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer mergedFile.Close()
+	for _, chunkUrl := range chunkUrls {
+		chunkName := strings.Split(path.Base(chunkUrl), "?")[0]
+		animationChunk, err := ioutil.ReadFile("./temp/" + client.sn + "/" + chunkName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if _, err := mergedFile.Write(animationChunk); err != nil {
+			log.Fatal(err)
+		}
+	}
+	_ = mergedFile.Sync()
+
+	intSn, err := strconv.ParseInt(client.sn, 10, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	findQueue, err := dbModel.FindDownloadQueue(context.Background(), client.DB, intSn)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if _, err := os.Stat("download"); os.IsNotExist(err) {
+		err := os.Mkdir("download", os.ModeDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if _, err := os.Stat(findQueue.Name); os.IsNotExist(err) {
+		err := os.Mkdir(findQueue.Name, os.ModeDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	savePath := "./download/" + findQueue.Name + "/" + findQueue.Name + "[" + findQueue.Ep + "]" + ".mp4"
+
+	err = exec.Command("ffmpeg", "-y", "-i", "./temp/"+client.sn+"/main.ts", "-c", "copy", savePath).Run()
+	if err != nil {
+		if runtime.GOOS == "windows" {
+			_ = exec.Command("./ffmpeg.exe", "-y", "-i", "./temp/"+client.sn+"/main.ts", "-c", "copy", savePath).Run()
+		} else {
+			_ = exec.Command("./ffmpeg", "-y", "-i", "./temp/"+client.sn+"/main.ts", "-c", "copy", savePath).Run()
+		}
+	}
 }
 
 func (client *animationDownloadClient) concurrentDownloadAnimationChunk(chunkUrls []string, key []byte, maxThreads int) {

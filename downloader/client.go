@@ -15,9 +15,10 @@ type animationDownloadClient struct {
 	*sql.DB
 	deviceID string
 	sn       string
+	stop     chan string
 }
 
-func newAnimationDownloadClient(sn string) (newAnimationDownloadClient *animationDownloadClient) {
+func newAnimationDownloadClient(sn string, stop chan string) (newAnimationDownloadClient *animationDownloadClient) {
 	cookieJar, _ := cookiejar.New(nil)
 	db := database.ConnectSqlite()
 	newAnimationDownloadClient = &animationDownloadClient{
