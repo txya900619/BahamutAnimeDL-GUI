@@ -10,9 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -56,36 +54,10 @@ func (client *animationDownloadClient) combineChunk(chunkUrls []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	parseTsToMp4(client.sn, findQueue.Name, findQueue.Ep)
 
-	if _, err := os.Stat("download"); os.IsNotExist(err) {
-		err := os.Mkdir("download", os.ModeDir)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	if _, err := os.Stat("./download/" + findQueue.Name); os.IsNotExist(err) {
-		err := os.Mkdir("./download/"+findQueue.Name, os.ModeDir)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	savePath := "./download/" + findQueue.Name + "/" + findQueue.Name + "[" + findQueue.Ep + "]" + ".mp4"
-
-	err = exec.Command("ffmpeg", "-y", "-i", "./.temp/"+client.sn+"/main.ts", "-c", "copy", savePath).Run()
-	if err != nil {
-		if runtime.GOOS == "windows" {
-			err = exec.Command("./ffmpeg.exe", "-y", "-i", "./.temp/"+client.sn+"/main.ts", "-c", "copy", savePath).Run()
-		} else {
-			err = exec.Command("./ffmpeg", "-y", "-i", "./.temp/"+client.sn+"/main.ts", "-c", "copy", savePath).Run()
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	newDpwmloaded := dbModel.DownloadedAnimation{SN: intSn, Title: findQueue.Name, Episode: findQueue.Ep}
-	err = newDpwmloaded.Insert(context.Background(), client.DB, boil.Infer())
+	newDownloaded := dbModel.DownloadedAnimation{SN: intSn, Title: findQueue.Name, Episode: findQueue.Ep}
+	err = newDownloaded.Insert(context.Background(), client.DB, boil.Infer())
 	if err != nil {
 		log.Fatal(err)
 	}

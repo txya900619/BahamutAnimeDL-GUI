@@ -3,7 +3,11 @@ package downloader
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"log"
 	"math/rand"
+	"os"
+	"os/exec"
+	"runtime"
 	"time"
 )
 
@@ -34,4 +38,33 @@ func pkc5Unpadding(decryptedData []byte) []byte {
 	dataLength := len(decryptedData)
 	unPadding := int(decryptedData[dataLength-1])
 	return decryptedData[:(dataLength - unPadding)]
+}
+
+func parseTsToMp4(sn string, title string, episode string) {
+	if _, err := os.Stat("download"); os.IsNotExist(err) {
+		err := os.Mkdir("download", os.ModeDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if _, err := os.Stat("./download/" + title); os.IsNotExist(err) {
+		err := os.Mkdir("./download/"+title, os.ModeDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	savePath := "./download/" + title + "/" + title + "[" + episode + "]" + ".mp4"
+
+	err := exec.Command("ffmpeg", "-y", "-i", "./.temp/"+sn+"/main.ts", "-c", "copy", savePath).Run()
+	if err != nil {
+		if runtime.GOOS == "windows" {
+			err = exec.Command("./ffmpeg.exe", "-y", "-i", "./.temp/"+sn+"/main.ts", "-c", "copy", savePath).Run()
+		} else {
+			err = exec.Command("./ffmpeg", "-y", "-i", "./.temp/"+sn+"/main.ts", "-c", "copy", savePath).Run()
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
