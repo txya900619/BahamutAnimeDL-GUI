@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/txya900619/BahamutAnimeDL-GUI/database"
 	dbModel "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
 	"github.com/volatiletech/sqlboiler/boil"
 	"io"
@@ -18,12 +19,12 @@ import (
 	"time"
 )
 
-func DownloadAnimation(sn int, stop *bool, wg *sync.WaitGroup) {
+func DownloadAnimation(sn string, stop *bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	resolution := "720"
 	maxThreads := 32
-	animationDLClient := newAnimationDownloadClient(strconv.Itoa(sn), stop)
+	animationDLClient := newAnimationDownloadClient(sn, stop)
 
 	err := animationDLClient.accessAD()
 	if err != nil {
@@ -105,18 +106,19 @@ func (client *animationDownloadClient) combineChunk(chunkUrls []string) error {
 	}
 	parseTsToMp4(client.sn, findQueue.Name, findQueue.Ep)
 
+	err = os.RemoveAll("./.temp/" + client.sn)
+	if err != nil {
+		rmMainDotTs(client.sn)
+		return err
+	}
+
 	newDownloaded := dbModel.DownloadedAnimation{SN: intSn, Title: findQueue.Name, Episode: findQueue.Ep}
 	err = newDownloaded.Insert(context.Background(), client.DB, boil.Infer())
 	if err != nil {
 		rmMainDotTs(client.sn)
 		return err
 	}
-	_, err = findQueue.Delete(context.Background(), client.DB)
-	if err != nil {
-		rmMainDotTs(client.sn)
-		return err
-	}
-	err = os.RemoveAll("./.temp/" + client.sn)
+	err = database.DeleteQueue(client.DB, client.sn)
 	if err != nil {
 		rmMainDotTs(client.sn)
 		return err
