@@ -42,3 +42,21 @@ func DeleteQueue(db *sql.DB, sn string) error {
 
 	return nil
 }
+
+func QueueDisDownloading(db *sql.DB, sn string) error {
+	intSn, err := strconv.ParseInt(sn, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	findQueue, err := dbModel.FindDownloadQueue(context.Background(), db, intSn)
+	if err != nil {
+		return err
+	}
+	findQueue.Downloading = 0
+	_, err = findQueue.Update(context.Background(), db, boil.Infer())
+	if err != nil {
+		return err
+	}
+	return nil
+}

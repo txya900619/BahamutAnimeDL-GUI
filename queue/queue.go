@@ -12,28 +12,34 @@ import (
 	"sync"
 )
 
-type System struct {
+type system struct {
 	db            *sql.DB
 	stopper       map[string]*bool
 	maxDownloader int
 }
 
-func (queue *System) Start() {
+func New(db *sql.DB, maxDownloader int) *system {
+	return &system{db: db, stopper: make(map[string]*bool), maxDownloader: maxDownloader}
+}
+
+func (queue *system) Start() {
 	for {
-		if len(queue.stopper) < queue.maxDownloader {
-			toDownload, err := dbModel.DownloadQueues(qm.Where("stop=? and downloading=?", int64(0), int64(0))).One(context.Background(), queue.db)
-			if err != nil {
-				log.Fatal(err)
+		if count, _ := dbModel.DownloadQueues(qm.Where("stop=? and downloading=?", 0, 0)).Count(context.Background(), queue.db); count > 0 {
+			if len(queue.stopper) < queue.maxDownloader {
+				toDownload, err := dbModel.DownloadQueues(qm.Where("stop=? and downloading=?", 0, 0)).One(context.Background(), queue.db)
+				if err != nil {
+					log.Fatal(err)
+				}
+				go queue.newDownloader(strconv.Itoa(int(toDownload.SN)))
 			}
-			go queue.newDownloader(strconv.Itoa(int(toDownload.SN)))
 		}
 	}
 }
 
-func (queue *System) newDownloader(sn string) {
+func (queue *system) newDownloader(sn string) {
 	stop := false
 	var wg sync.WaitGroup
-	queue.stopper["sn"] = &stop
+	queue.stopper[sn] = &stop
 
 	intSn, err := strconv.ParseInt(sn, 10, 64)
 	if err != nil {
@@ -55,7 +61,7 @@ func (queue *System) newDownloader(sn string) {
 	delete(queue.stopper, sn)
 }
 
-func (queue *System) Close(sn string) {
+func (queue *system) Stop(sn string) {
 	intSn, err := strconv.ParseInt(sn, 10, 64)
 	if err != nil {
 		log.Fatal(err)
@@ -64,11 +70,27 @@ func (queue *System) Close(sn string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	downloadingQueue.Downloading = 1
+	downloadingQueue.Stop = 1
 	_, err = downloadingQueue.Update(context.Background(), queue.db, boil.Infer())
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	*queue.stopper[sn] = true
+}
+
+func (queue *system) ReStart(sn string) {
+	intSn, err := strconv.ParseInt(sn, 10, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	downloadingQueue, err := dbModel.FindDownloadQueue(context.Background(), queue.db, intSn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	downloadingQueue.Stop = 0
+	_, err = downloadingQueue.Update(context.Background(), queue.db, boil.Infer())
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -29,6 +29,10 @@ func DownloadAnimation(sn string, stop *bool, wg *sync.WaitGroup) {
 	err := animationDLClient.accessAD()
 	if err != nil {
 		if err.Error() == "stopped" {
+			err := database.QueueDisDownloading(animationDLClient.DB, sn)
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		log.Fatal(err)
@@ -37,6 +41,10 @@ func DownloadAnimation(sn string, stop *bool, wg *sync.WaitGroup) {
 	chunkUrls, key, err := animationDLClient.getAnimationChunkUrlsAndKey(resolution)
 	if err != nil {
 		if err.Error() == "stopped" {
+			err := database.QueueDisDownloading(animationDLClient.DB, sn)
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		log.Fatal(err)
@@ -45,6 +53,10 @@ func DownloadAnimation(sn string, stop *bool, wg *sync.WaitGroup) {
 	err = animationDLClient.concurrentDownloadAnimationChunk(chunkUrls, key, maxThreads)
 	if err != nil {
 		if err.Error() == "stopped" {
+			err := database.QueueDisDownloading(animationDLClient.DB, sn)
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		log.Fatal(err)
@@ -53,6 +65,10 @@ func DownloadAnimation(sn string, stop *bool, wg *sync.WaitGroup) {
 	err = animationDLClient.combineChunk(chunkUrls)
 	if err != nil {
 		if err.Error() == "stopped" {
+			err := database.QueueDisDownloading(animationDLClient.DB, sn)
+			if err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 		log.Fatal(err)
