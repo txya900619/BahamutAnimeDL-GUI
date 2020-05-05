@@ -30,7 +30,7 @@ func init() {
 	AnimeList = crawler.GetAllAnimeList()
 
 	if _, err := os.Stat("./.temp"); os.IsNotExist(err) {
-		os.Mkdir("./.temp", os.ModeDir)
+		os.Mkdir("./.temp", 0777)
 		if runtime.GOOS == "windows" {
 			utilities.HideFolder("./.temp")
 		}

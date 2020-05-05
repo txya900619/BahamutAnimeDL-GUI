@@ -9,42 +9,44 @@ import (
 	"strings"
 )
 
-func (client *animationDownloadClient) getAnimationChunkUrlsAndKey(resolution string) (chunkUrls []string, key []byte, err error) {
+func (client *animationDownloadClient) getAnimationChunkUrlsAndKey(resolution string) ([]string, []byte, error) {
 	if *client.stop {
-		err = errors.New("stopped")
-		return
+		err := errors.New("stopped")
+		return nil, nil, err
 	}
 
 	chunksListUrl, err := findChunkListMatchResolution(client, resolution)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 	resp, err := client.Get(chunksListUrl)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
+	var key []byte
+	chunkUrls := make([]string, 0)
 	playList, listType, err := m3u8.Decode(*bytes.NewBuffer(body), true)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 	if listType == m3u8.MEDIA {
 		mediaPlayList := playList.(*m3u8.MediaPlaylist)
 
 		resp, err := client.Get(mediaPlayList.Key.URI)
 		if err != nil {
-			return
+			return nil, nil, err
 		}
 		defer resp.Body.Close()
 		key, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return
+			return nil, nil, err
 		}
 
 		chunkUrlsPrefix := strings.Split(chunksListUrl, "chunklist")[0]
@@ -55,33 +57,34 @@ func (client *animationDownloadClient) getAnimationChunkUrlsAndKey(resolution st
 		}
 	}
 
-	return
+	return chunkUrls, key, nil
 }
 
-func findChunkListMatchResolution(client *animationDownloadClient, resolution string) (chunkListUrl string, err error) {
+func findChunkListMatchResolution(client *animationDownloadClient, resolution string) (string, error) {
 	if *client.stop {
-		err = errors.New("stooped")
-		return
+		err := errors.New("stooped")
+		return "", err
 	}
 
 	m3u8Url, err := getAnimationM3u8Url(client)
 	if err != nil {
-		return
+		return "", err
 	}
 	resp, err := client.Get(m3u8Url)
 	if err != nil {
-		return
+		return "", err
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return "", err
 	}
 
+	chunkListUrl := ""
 	playList, listType, err := m3u8.Decode(*bytes.NewBuffer(body), true)
 	if err != nil {
-		return
+		return "", err
 	}
 	if listType == m3u8.MASTER {
 		masterPlayList := playList.(*m3u8.MasterPlaylist)
@@ -93,32 +96,32 @@ func findChunkListMatchResolution(client *animationDownloadClient, resolution st
 		}
 	}
 
-	return
+	return chunkListUrl, nil
 }
 
-func getAnimationM3u8Url(client *animationDownloadClient) (m3u8ListUrl string, err error) {
+func getAnimationM3u8Url(client *animationDownloadClient) (string, error) {
 	if *client.stop {
-		err = errors.New("stopped")
-		return
+		err := errors.New("stopped")
+		return "", err
 	}
 
 	resp, err := client.Get("https://ani.gamer.com.tw/ajax/m3u8.php?sn=" + client.sn + "&device=" + client.deviceID)
 	if err != nil {
-		return
+		return "", err
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return "", err
 	}
 
 	jsonParse := make(map[string]string)
 	err = json.Unmarshal(body, &jsonParse)
 	if err != nil {
-		return
+		return "", err
 	}
-	m3u8ListUrl = "https:" + jsonParse["src"]
+	m3u8ListUrl := "https:" + jsonParse["src"]
 
-	return
+	return m3u8ListUrl, nil
 }

@@ -18,7 +18,9 @@ import (
 	"time"
 )
 
-func DownloadAnimation(sn int, stop *bool) {
+func DownloadAnimation(sn int, stop *bool, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	resolution := "720"
 	maxThreads := 32
 	animationDLClient := newAnimationDownloadClient(strconv.Itoa(sn), stop)
@@ -56,15 +58,15 @@ func DownloadAnimation(sn int, stop *bool) {
 	}
 }
 
-func (client *animationDownloadClient) combineChunk(chunkUrls []string) (err error) {
+func (client *animationDownloadClient) combineChunk(chunkUrls []string) error {
 	if *client.stop {
-		err = errors.New("stopped")
-		return
+		err := errors.New("stopped")
+		return err
 	}
 
 	mergedFile, err := os.Create("./.temp/" + client.sn + "/main.ts")
 	if err != nil {
-		return
+		return err
 	}
 
 	for _, chunkUrl := range chunkUrls {
@@ -72,7 +74,7 @@ func (client *animationDownloadClient) combineChunk(chunkUrls []string) (err err
 			mergedFile.Close()
 			rmMainDotTs(client.sn)
 			err = errors.New("stopped")
-			return
+			return err
 		}
 
 		chunkName := strings.Split(path.Base(chunkUrl), "?")[0]
@@ -80,12 +82,12 @@ func (client *animationDownloadClient) combineChunk(chunkUrls []string) (err err
 		if err != nil {
 			mergedFile.Close()
 			rmMainDotTs(client.sn)
-			return
+			return err
 		}
 		if _, err := mergedFile.Write(animationChunk); err != nil {
 			mergedFile.Close()
 			rmMainDotTs(client.sn)
-			return
+			return err
 		}
 	}
 	_ = mergedFile.Sync()
@@ -94,12 +96,12 @@ func (client *animationDownloadClient) combineChunk(chunkUrls []string) (err err
 	intSn, err := strconv.ParseInt(client.sn, 10, 64)
 	if err != nil {
 		rmMainDotTs(client.sn)
-		return
+		return err
 	}
 	findQueue, err := dbModel.FindDownloadQueue(context.Background(), client.DB, intSn)
 	if err != nil {
 		rmMainDotTs(client.sn)
-		return
+		return err
 	}
 	parseTsToMp4(client.sn, findQueue.Name, findQueue.Ep)
 
@@ -107,32 +109,32 @@ func (client *animationDownloadClient) combineChunk(chunkUrls []string) (err err
 	err = newDownloaded.Insert(context.Background(), client.DB, boil.Infer())
 	if err != nil {
 		rmMainDotTs(client.sn)
-		return
+		return err
 	}
 	_, err = findQueue.Delete(context.Background(), client.DB)
 	if err != nil {
 		rmMainDotTs(client.sn)
-		return
+		return err
 	}
 	err = os.RemoveAll("./.temp/" + client.sn)
 	if err != nil {
 		rmMainDotTs(client.sn)
-		return
+		return err
 	}
 
-	return
+	return nil
 }
 
-func (client *animationDownloadClient) concurrentDownloadAnimationChunk(chunkUrls []string, key []byte, maxThreads int) (err error) {
+func (client *animationDownloadClient) concurrentDownloadAnimationChunk(chunkUrls []string, key []byte, maxThreads int) error {
 	if *client.stop {
-		err = errors.New("stopped")
-		return
+		err := errors.New("stopped")
+		return err
 	}
 
 	if _, err := os.Stat("./.temp/" + client.sn); os.IsNotExist(err) {
-		err = os.Mkdir("./.temp/"+client.sn, os.ModeDir)
+		err := os.Mkdir("./.temp/"+client.sn, 0777)
 		if err != nil {
-			return
+			return err
 		}
 	}
 
@@ -157,6 +159,7 @@ func (client *animationDownloadClient) concurrentDownloadAnimationChunk(chunkUrl
 		}()
 	}
 
+	var err error
 	for _, url := range chunkUrls {
 		if *client.stop {
 			err = errors.New("stopped")
@@ -166,10 +169,10 @@ func (client *animationDownloadClient) concurrentDownloadAnimationChunk(chunkUrl
 	}
 	close(ch)
 	wg.Wait()
-	return
+	return err
 }
 
-func downloadAnimationChunk(client *animationDownloadClient, url string, key []byte) (success bool) {
+func downloadAnimationChunk(client *animationDownloadClient, url string, key []byte) bool {
 	fileName := strings.Split(path.Base(url), "?")[0]
 	fileState, err := os.Stat("./.temp/" + client.sn + "/" + fileName)
 	if err == nil && fileState.Size() != 0 {

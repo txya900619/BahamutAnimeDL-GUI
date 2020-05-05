@@ -18,20 +18,20 @@ type animationDownloadClient struct {
 	stop     *bool
 }
 
-func newAnimationDownloadClient(sn string, stop *bool) (newAnimationDownloadClient *animationDownloadClient) {
+func newAnimationDownloadClient(sn string, stop *bool) *animationDownloadClient {
 	cookieJar, _ := cookiejar.New(nil)
 	db := database.ConnectSqlite()
-	newAnimationDownloadClient = &animationDownloadClient{
+	newAnimationDownloadClient := &animationDownloadClient{
 		Client: &http.Client{Jar: cookieJar},
 		DB:     db,
 		sn:     sn,
 		stop:   stop,
 	}
 	newAnimationDownloadClient.getDeviceID()
-	return
+	return newAnimationDownloadClient
 }
 
-func (client *animationDownloadClient) Get(url string) (resp *http.Response, err error) {
+func (client *animationDownloadClient) Get(url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -39,8 +39,7 @@ func (client *animationDownloadClient) Get(url string) (resp *http.Response, err
 	req.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36")
 	req.Header.Add("referer", "https://ani.gamer.com.tw/animeVideo.php?sn="+client.sn)
 	req.Header.Add("origin", "https://ani.gamer.com.tw")
-	resp, err = client.Do(req)
-	return
+	return client.Do(req)
 }
 
 func (client *animationDownloadClient) getDeviceID() {

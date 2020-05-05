@@ -42,14 +42,14 @@ func pkc5Unpadding(decryptedData []byte) []byte {
 
 func parseTsToMp4(sn string, title string, episode string) {
 	if _, err := os.Stat("download"); os.IsNotExist(err) {
-		err := os.Mkdir("download", os.ModeDir)
+		err := os.Mkdir("download", 0777)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	if _, err := os.Stat("./download/" + title); os.IsNotExist(err) {
-		err := os.Mkdir("./download/"+title, os.ModeDir)
+		err := os.Mkdir("./download/"+title, 0777)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -69,18 +69,19 @@ func parseTsToMp4(sn string, title string, episode string) {
 	}
 }
 
-func waitEightSec(complete chan bool, stop *bool) {
+func waitEightSec(complete chan<- bool, stop *bool) {
 	end := make(chan struct{})
 	go func() {
-		select {
-		case <-end:
-			return
-		default:
-			if *stop {
-				complete <- false
-				close(end)
-				close(complete)
+		for {
+			select {
+			case <-end:
 				return
+			default:
+				if *stop {
+					complete <- false
+					close(end)
+					return
+				}
 			}
 		}
 	}()
@@ -90,7 +91,6 @@ func waitEightSec(complete chan bool, stop *bool) {
 	}
 	close(end)
 	complete <- true
-	close(complete)
 }
 
 func rmMainDotTs(sn string) {
