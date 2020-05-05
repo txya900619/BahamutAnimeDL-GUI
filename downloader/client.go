@@ -15,16 +15,17 @@ type animationDownloadClient struct {
 	*sql.DB
 	deviceID string
 	sn       string
-	stop     chan string
+	stop     *bool
 }
 
-func newAnimationDownloadClient(sn string, stop chan string) (newAnimationDownloadClient *animationDownloadClient) {
+func newAnimationDownloadClient(sn string, stop *bool) (newAnimationDownloadClient *animationDownloadClient) {
 	cookieJar, _ := cookiejar.New(nil)
 	db := database.ConnectSqlite()
 	newAnimationDownloadClient = &animationDownloadClient{
 		Client: &http.Client{Jar: cookieJar},
 		DB:     db,
 		sn:     sn,
+		stop:   stop,
 	}
 	newAnimationDownloadClient.getDeviceID()
 	return

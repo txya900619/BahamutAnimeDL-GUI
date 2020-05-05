@@ -3,6 +3,7 @@ package downloader
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	dbModel "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
 	"github.com/volatiletech/sqlboiler/boil"
@@ -17,30 +18,74 @@ import (
 	"time"
 )
 
-func DownloadAnimation(sn int, stop chan string) {
+func DownloadAnimation(sn int, stop *bool) {
 	resolution := "720"
 	maxThreads := 32
 	animationDLClient := newAnimationDownloadClient(strconv.Itoa(sn), stop)
-	animationDLClient.accessAD()
-	chunkUrls, key := animationDLClient.getAnimationChunkUrlsAndKey(resolution)
-	animationDLClient.concurrentDownloadAnimationChunk(chunkUrls, key, maxThreads)
-	animationDLClient.combineChunk(chunkUrls)
-}
 
-func (client *animationDownloadClient) combineChunk(chunkUrls []string) {
-	mergedFile, err := os.Create("./.temp/" + client.sn + "/main.ts")
+	err := animationDLClient.accessAD()
 	if err != nil {
+		if err.Error() == "stopped" {
+			return
+		}
 		log.Fatal(err)
 	}
 
+	chunkUrls, key, err := animationDLClient.getAnimationChunkUrlsAndKey(resolution)
+	if err != nil {
+		if err.Error() == "stopped" {
+			return
+		}
+		log.Fatal(err)
+	}
+
+	err = animationDLClient.concurrentDownloadAnimationChunk(chunkUrls, key, maxThreads)
+	if err != nil {
+		if err.Error() == "stopped" {
+			return
+		}
+		log.Fatal(err)
+	}
+
+	err = animationDLClient.combineChunk(chunkUrls)
+	if err != nil {
+		if err.Error() == "stopped" {
+			return
+		}
+		log.Fatal(err)
+	}
+}
+
+func (client *animationDownloadClient) combineChunk(chunkUrls []string) (err error) {
+	if *client.stop {
+		err = errors.New("stopped")
+		return
+	}
+
+	mergedFile, err := os.Create("./.temp/" + client.sn + "/main.ts")
+	if err != nil {
+		return
+	}
+
 	for _, chunkUrl := range chunkUrls {
+		if *client.stop {
+			mergedFile.Close()
+			rmMainDotTs(client.sn)
+			err = errors.New("stopped")
+			return
+		}
+
 		chunkName := strings.Split(path.Base(chunkUrl), "?")[0]
 		animationChunk, err := ioutil.ReadFile("./.temp/" + client.sn + "/" + chunkName)
 		if err != nil {
-			log.Fatal(err)
+			mergedFile.Close()
+			rmMainDotTs(client.sn)
+			return
 		}
 		if _, err := mergedFile.Write(animationChunk); err != nil {
-			log.Fatal(err)
+			mergedFile.Close()
+			rmMainDotTs(client.sn)
+			return
 		}
 	}
 	_ = mergedFile.Sync()
@@ -48,34 +93,46 @@ func (client *animationDownloadClient) combineChunk(chunkUrls []string) {
 
 	intSn, err := strconv.ParseInt(client.sn, 10, 64)
 	if err != nil {
-		log.Fatal(err)
+		rmMainDotTs(client.sn)
+		return
 	}
 	findQueue, err := dbModel.FindDownloadQueue(context.Background(), client.DB, intSn)
 	if err != nil {
-		log.Fatal(err)
+		rmMainDotTs(client.sn)
+		return
 	}
 	parseTsToMp4(client.sn, findQueue.Name, findQueue.Ep)
 
 	newDownloaded := dbModel.DownloadedAnimation{SN: intSn, Title: findQueue.Name, Episode: findQueue.Ep}
 	err = newDownloaded.Insert(context.Background(), client.DB, boil.Infer())
 	if err != nil {
-		log.Fatal(err)
+		rmMainDotTs(client.sn)
+		return
 	}
 	_, err = findQueue.Delete(context.Background(), client.DB)
 	if err != nil {
-		log.Fatal(err)
+		rmMainDotTs(client.sn)
+		return
 	}
 	err = os.RemoveAll("./.temp/" + client.sn)
 	if err != nil {
-		log.Fatal(err)
+		rmMainDotTs(client.sn)
+		return
 	}
+
+	return
 }
 
-func (client *animationDownloadClient) concurrentDownloadAnimationChunk(chunkUrls []string, key []byte, maxThreads int) {
+func (client *animationDownloadClient) concurrentDownloadAnimationChunk(chunkUrls []string, key []byte, maxThreads int) (err error) {
+	if *client.stop {
+		err = errors.New("stopped")
+		return
+	}
+
 	if _, err := os.Stat("./.temp/" + client.sn); os.IsNotExist(err) {
 		err = os.Mkdir("./.temp/"+client.sn, os.ModeDir)
 		if err != nil {
-			log.Fatal(err)
+			return
 		}
 	}
 
@@ -101,10 +158,15 @@ func (client *animationDownloadClient) concurrentDownloadAnimationChunk(chunkUrl
 	}
 
 	for _, url := range chunkUrls {
+		if *client.stop {
+			err = errors.New("stopped")
+			break
+		}
 		ch <- url
 	}
 	close(ch)
 	wg.Wait()
+	return
 }
 
 func downloadAnimationChunk(client *animationDownloadClient, url string, key []byte) (success bool) {

@@ -68,3 +68,34 @@ func parseTsToMp4(sn string, title string, episode string) {
 		}
 	}
 }
+
+func waitEightSec(complete chan bool, stop *bool) {
+	end := make(chan struct{})
+	go func() {
+		select {
+		case <-end:
+			return
+		default:
+			if *stop {
+				complete <- false
+				close(end)
+				close(complete)
+				return
+			}
+		}
+	}()
+	time.Sleep(8 * time.Second)
+	if *stop {
+		return
+	}
+	close(end)
+	complete <- true
+	close(complete)
+}
+
+func rmMainDotTs(sn string) {
+	err := os.Remove("./.temp/" + sn + "/main.ts")
+	if err != nil {
+		panic(err)
+	}
+}
