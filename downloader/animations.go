@@ -120,15 +120,16 @@ func (client *animationDownloadClient) combineChunk(chunkUrls []string) error {
 		rmMainDotTs(client.sn)
 		return err
 	}
-	parseTsToMp4(client.sn, findQueue.Name, findQueue.Ep)
+	parseTsToMp4(client.sn, findQueue.Name, findQueue.Ep, findQueue.Spacial)
 
 	err = os.RemoveAll("./.temp/" + client.sn)
 	if err != nil {
+		fmt.Println(err)
 		rmMainDotTs(client.sn)
 		return err
 	}
 
-	newDownloaded := dbModel.DownloadedAnimation{SN: intSn, Title: findQueue.Name, Episode: findQueue.Ep}
+	newDownloaded := dbModel.DownloadedAnimation{SN: intSn, Title: findQueue.Name, Episode: findQueue.Ep, Spacial: findQueue.Spacial}
 	err = newDownloaded.Insert(context.Background(), client.DB, boil.Infer())
 	if err != nil {
 		rmMainDotTs(client.sn)

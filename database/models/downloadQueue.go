@@ -28,6 +28,7 @@ type DownloadQueue struct {
 	Sequence    int64  `boil:"sequence" json:"sequence" toml:"sequence" yaml:"sequence"`
 	Downloading int64  `boil:"downloading" json:"downloading" toml:"downloading" yaml:"downloading"`
 	Stop        int64  `boil:"stop" json:"stop" toml:"stop" yaml:"stop"`
+	Spacial     int64  `boil:"spacial" json:"spacial" toml:"spacial" yaml:"spacial"`
 
 	R *downloadQueueR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L downloadQueueL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -40,6 +41,7 @@ var DownloadQueueColumns = struct {
 	Sequence    string
 	Downloading string
 	Stop        string
+	Spacial     string
 }{
 	SN:          "sn",
 	Name:        "name",
@@ -47,6 +49,7 @@ var DownloadQueueColumns = struct {
 	Sequence:    "sequence",
 	Downloading: "downloading",
 	Stop:        "stop",
+	Spacial:     "spacial",
 }
 
 // Generated where
@@ -90,6 +93,7 @@ var DownloadQueueWhere = struct {
 	Sequence    whereHelperint64
 	Downloading whereHelperint64
 	Stop        whereHelperint64
+	Spacial     whereHelperint64
 }{
 	SN:          whereHelperint64{field: "\"downloadQueue\".\"sn\""},
 	Name:        whereHelperstring{field: "\"downloadQueue\".\"name\""},
@@ -97,6 +101,7 @@ var DownloadQueueWhere = struct {
 	Sequence:    whereHelperint64{field: "\"downloadQueue\".\"sequence\""},
 	Downloading: whereHelperint64{field: "\"downloadQueue\".\"downloading\""},
 	Stop:        whereHelperint64{field: "\"downloadQueue\".\"stop\""},
+	Spacial:     whereHelperint64{field: "\"downloadQueue\".\"spacial\""},
 }
 
 // DownloadQueueRels is where relationship names are stored.
@@ -116,9 +121,9 @@ func (*downloadQueueR) NewStruct() *downloadQueueR {
 type downloadQueueL struct{}
 
 var (
-	downloadQueueAllColumns            = []string{"sn", "name", "ep", "sequence", "downloading", "stop"}
+	downloadQueueAllColumns            = []string{"sn", "name", "ep", "sequence", "downloading", "stop", "spacial"}
 	downloadQueueColumnsWithoutDefault = []string{"name", "ep", "sequence"}
-	downloadQueueColumnsWithDefault    = []string{"sn", "downloading", "stop"}
+	downloadQueueColumnsWithDefault    = []string{"sn", "downloading", "stop", "spacial"}
 	downloadQueuePrimaryKeyColumns     = []string{"sn"}
 )
 

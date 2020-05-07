@@ -10,33 +10,35 @@ import (
 	"log"
 	"strconv"
 	"sync"
+	"time"
 )
 
-type system struct {
+type System struct {
 	db            *sql.DB
 	stopper       map[string]*bool
 	maxDownloader int
 }
 
-func New(db *sql.DB, maxDownloader int) *system {
-	return &system{db: db, stopper: make(map[string]*bool), maxDownloader: maxDownloader}
+func New(db *sql.DB, maxDownloader int) *System {
+	return &System{db: db, stopper: make(map[string]*bool), maxDownloader: maxDownloader}
 }
 
-func (queue *system) Start() {
+func (queue *System) Start() {
 	for {
 		if count, _ := dbModel.DownloadQueues(qm.Where("stop=? and downloading=?", 0, 0)).Count(context.Background(), queue.db); count > 0 {
 			if len(queue.stopper) < queue.maxDownloader {
-				toDownload, err := dbModel.DownloadQueues(qm.Where("stop=? and downloading=?", 0, 0)).One(context.Background(), queue.db)
+				toDownload, err := dbModel.DownloadQueues(qm.Where("stop=? and downloading=?", 0, 0), qm.OrderBy("sequence")).One(context.Background(), queue.db)
 				if err != nil {
 					log.Fatal(err)
 				}
 				go queue.newDownloader(strconv.Itoa(int(toDownload.SN)))
 			}
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-func (queue *system) newDownloader(sn string) {
+func (queue *System) newDownloader(sn string) {
 	stop := false
 	var wg sync.WaitGroup
 	queue.stopper[sn] = &stop
@@ -61,7 +63,7 @@ func (queue *system) newDownloader(sn string) {
 	delete(queue.stopper, sn)
 }
 
-func (queue *system) Stop(sn string) {
+func (queue *System) Stop(sn string) {
 	intSn, err := strconv.ParseInt(sn, 10, 64)
 	if err != nil {
 		log.Fatal(err)
@@ -79,7 +81,7 @@ func (queue *system) Stop(sn string) {
 	*queue.stopper[sn] = true
 }
 
-func (queue *system) ReStart(sn string) {
+func (queue *System) ReStart(sn string) {
 	intSn, err := strconv.ParseInt(sn, 10, 64)
 	if err != nil {
 		log.Fatal(err)

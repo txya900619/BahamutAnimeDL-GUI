@@ -10,6 +10,7 @@ import (
 	"github.com/txya900619/BahamutAnimeDL-GUI/database"
 	dbModels "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
 	"github.com/txya900619/BahamutAnimeDL-GUI/models"
+	"github.com/txya900619/BahamutAnimeDL-GUI/queue"
 	"github.com/txya900619/BahamutAnimeDL-GUI/utilities"
 	"github.com/volatiletech/sqlboiler/boil"
 	"github.com/zserge/lorca"
@@ -23,6 +24,7 @@ import (
 var NewAnimeList []models.NewAnime
 var AnimeList []models.Anime
 var db *sql.DB
+var queueSystem *queue.System
 
 func init() {
 	db = database.ConnectSqlite()
@@ -35,6 +37,9 @@ func init() {
 			utilities.HideFolder("./.temp")
 		}
 	}
+
+	queueSystem = queue.New(db, 1)
+	go queueSystem.Start()
 
 }
 
@@ -83,16 +88,20 @@ func main() {
 		return utilities.ToJson(crawler.GetSnsByOneSn(sn))
 	})
 
-	app.Bind("insertAnimeToQueue", func(title, ep, sn string) {
+	app.Bind("insertAnimeToQueue", func(title, ep, sn string, spacial bool) {
 		lastSequence, err := dbModels.DownloadQueues().Count(context.Background(), db)
 		if err != nil {
 			log.Fatal(err)
+		}
+		var intSpacial int64
+		if spacial {
+			intSpacial = 1
 		}
 		intSn, err := strconv.ParseInt(sn, 10, 64)
 		if err != nil {
 			log.Fatal(err)
 		}
-		queue := dbModels.DownloadQueue{SN: intSn, Name: title, Ep: ep, Sequence: lastSequence + 1}
+		queue := dbModels.DownloadQueue{SN: intSn, Name: title, Ep: ep, Sequence: lastSequence + 1, Spacial: intSpacial}
 		err = queue.Insert(context.Background(), db, boil.Infer())
 	})
 

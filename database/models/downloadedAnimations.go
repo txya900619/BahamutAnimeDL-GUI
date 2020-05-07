@@ -25,6 +25,7 @@ type DownloadedAnimation struct {
 	SN      int64  `boil:"sn" json:"sn" toml:"sn" yaml:"sn"`
 	Title   string `boil:"title" json:"title" toml:"title" yaml:"title"`
 	Episode string `boil:"episode" json:"episode" toml:"episode" yaml:"episode"`
+	Spacial int64  `boil:"spacial" json:"spacial" toml:"spacial" yaml:"spacial"`
 
 	R *downloadedAnimationR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L downloadedAnimationL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -34,10 +35,12 @@ var DownloadedAnimationColumns = struct {
 	SN      string
 	Title   string
 	Episode string
+	Spacial string
 }{
 	SN:      "sn",
 	Title:   "title",
 	Episode: "episode",
+	Spacial: "spacial",
 }
 
 // Generated where
@@ -46,10 +49,12 @@ var DownloadedAnimationWhere = struct {
 	SN      whereHelperint64
 	Title   whereHelperstring
 	Episode whereHelperstring
+	Spacial whereHelperint64
 }{
 	SN:      whereHelperint64{field: "\"downloadedAnimations\".\"sn\""},
 	Title:   whereHelperstring{field: "\"downloadedAnimations\".\"title\""},
 	Episode: whereHelperstring{field: "\"downloadedAnimations\".\"episode\""},
+	Spacial: whereHelperint64{field: "\"downloadedAnimations\".\"spacial\""},
 }
 
 // DownloadedAnimationRels is where relationship names are stored.
@@ -69,9 +74,9 @@ func (*downloadedAnimationR) NewStruct() *downloadedAnimationR {
 type downloadedAnimationL struct{}
 
 var (
-	downloadedAnimationAllColumns            = []string{"sn", "title", "episode"}
+	downloadedAnimationAllColumns            = []string{"sn", "title", "episode", "spacial"}
 	downloadedAnimationColumnsWithoutDefault = []string{"title", "episode"}
-	downloadedAnimationColumnsWithDefault    = []string{"sn"}
+	downloadedAnimationColumnsWithDefault    = []string{"sn", "spacial"}
 	downloadedAnimationPrimaryKeyColumns     = []string{"sn"}
 )
 
