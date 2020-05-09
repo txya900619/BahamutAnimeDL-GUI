@@ -3,27 +3,46 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"github.com/markbates/pkger"
 	"github.com/txya900619/BahamutAnimeDL-GUI/crawler"
+	"github.com/txya900619/BahamutAnimeDL-GUI/database"
+	dbModels "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
 	"github.com/txya900619/BahamutAnimeDL-GUI/models"
+	"github.com/txya900619/BahamutAnimeDL-GUI/queue"
 	"github.com/txya900619/BahamutAnimeDL-GUI/utilities"
+	"github.com/volatiletech/sqlboiler/boil"
 	"github.com/zserge/lorca"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
 var NewAnimeList []models.NewAnime
 var AnimeList []models.Anime
+var db *sql.DB
+var queueSystem *queue.System
 
 func init() {
+	db = database.ConnectSqlite()
 	NewAnimeList = crawler.GetNewAnimeList()
-	go func() {
-		AnimeList = crawler.GetAllAnimeList()
-	}()
+	AnimeList = crawler.GetAllAnimeList()
+
+	if _, err := os.Stat("./.temp"); os.IsNotExist(err) {
+		os.Mkdir("./.temp", 0777)
+		if runtime.GOOS == "windows" {
+			utilities.HideFolder("./.temp")
+		}
+	}
+
+	queueSystem = queue.New(db, 1)
+	go queueSystem.Start()
 }
 
 func main() {
@@ -39,20 +58,18 @@ func main() {
 	}
 	defer app.Close()
 
-	app.Bind("getNewAnimeList", func() string {
-		return utilities.ToJson(NewAnimeList)
+	app.Bind("getNewAnimeList", func() []models.NewAnime {
+		return NewAnimeList
 	})
-	app.Bind("getAllAnimeList", func() string {
-		return utilities.ToJson(AnimeList)
-	})
-	app.Bind("getAnimesByPage", func(page int) string {
-		return utilities.ToJson(AnimeList[(page-1)*18 : page*18])
+
+	app.Bind("getAnimesByPage", func(page int) []models.Anime {
+		return AnimeList[(page-1)*18 : page*18]
 	})
 	app.Bind("getMaxPage", func() int {
 		return len(AnimeList)/18 + 1
 	})
 
-	app.Bind("getAnimesByFilter", func(filter string) string {
+	app.Bind("getAnimesByFilter", func(filter string) []models.Anime {
 		filteredAnimes := make([]models.Anime, 0)
 		filter = strings.ToLower(filter)
 		for _, v := range AnimeList {
@@ -60,15 +77,32 @@ func main() {
 				filteredAnimes = append(filteredAnimes, v)
 			}
 		}
-		return utilities.ToJson(filteredAnimes)
+		return filteredAnimes
 	})
 
 	app.Bind("getRealSn", func(ref string) string {
 		return crawler.GetRealSn(ref)
 	})
 
-	app.Bind("getAnimeAllSn", func(sn string) string {
-		return utilities.ToJson(crawler.GetSnsByOneSn(sn))
+	app.Bind("getAnimeAllSn", func(sn string) map[string][]models.Sn {
+		return crawler.GetSnsByOneSn(sn)
+	})
+
+	app.Bind("insertAnimeToQueue", func(title, ep, sn string, spacial bool) {
+		lastSequence, err := dbModels.DownloadQueues().Count(context.Background(), db)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var intSpacial int64
+		if spacial {
+			intSpacial = 1
+		}
+		intSn, err := strconv.ParseInt(sn, 10, 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		queue := dbModels.DownloadQueue{SN: intSn, Name: title, Ep: ep, Sequence: lastSequence + 1, Spacial: intSpacial}
+		err = queue.Insert(context.Background(), db, boil.Infer())
 	})
 
 	net, err := net.Listen("tcp", "127.0.0.1:0")

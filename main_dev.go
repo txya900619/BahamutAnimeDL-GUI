@@ -13,6 +13,7 @@ import (
 	"github.com/txya900619/BahamutAnimeDL-GUI/queue"
 	"github.com/txya900619/BahamutAnimeDL-GUI/utilities"
 	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/queries/qm"
 	"github.com/zserge/lorca"
 	"log"
 	"os"
@@ -56,20 +57,18 @@ func main() {
 	}
 	defer app.Close()
 
-	app.Bind("getNewAnimeList", func() string {
-		return utilities.ToJson(NewAnimeList)
+	app.Bind("getNewAnimeList", func() []models.NewAnime {
+		return NewAnimeList
 	})
-	app.Bind("getAllAnimeList", func() string {
-		return utilities.ToJson(AnimeList)
-	})
-	app.Bind("getAnimesByPage", func(page int) string {
-		return utilities.ToJson(AnimeList[(page-1)*18 : page*18])
+
+	app.Bind("getAnimesByPage", func(page int) []models.Anime {
+		return AnimeList[(page-1)*18 : page*18]
 	})
 	app.Bind("getMaxPage", func() int {
 		return len(AnimeList)/18 + 1
 	})
 
-	app.Bind("getAnimesByFilter", func(filter string) string {
+	app.Bind("getAnimesByFilter", func(filter string) []models.Anime {
 		filter = strings.ToLower(filter)
 		filteredAnimes := make([]models.Anime, 0)
 		for _, v := range AnimeList {
@@ -77,15 +76,15 @@ func main() {
 				filteredAnimes = append(filteredAnimes, v)
 			}
 		}
-		return utilities.ToJson(filteredAnimes)
+		return filteredAnimes
 	})
 
 	app.Bind("getRealSn", func(ref string) string {
 		return crawler.GetRealSn(ref)
 	})
 
-	app.Bind("getAnimeAllSn", func(sn string) string {
-		return utilities.ToJson(crawler.GetSnsByOneSn(sn))
+	app.Bind("getAnimeAllSn", func(sn string) map[string][]models.Sn {
+		return crawler.GetSnsByOneSn(sn)
 	})
 
 	app.Bind("insertAnimeToQueue", func(title, ep, sn string, spacial bool) {
@@ -103,6 +102,18 @@ func main() {
 		}
 		queue := dbModels.DownloadQueue{SN: intSn, Name: title, Ep: ep, Sequence: lastSequence + 1, Spacial: intSpacial}
 		err = queue.Insert(context.Background(), db, boil.Infer())
+	})
+
+	app.Bind("getDownloadQueue", func() []dbModels.DownloadQueue {
+		queuesPtr, err := dbModels.DownloadQueues(qm.OrderBy("sequence")).All(context.Background(), db)
+		if err != nil {
+			log.Fatal(err)
+		}
+		queues := make([]dbModels.DownloadQueue, 0)
+		for _, queuePtr := range queuesPtr {
+			queues = append(queues, *queuePtr)
+		}
+		return queues
 	})
 
 	app.Load(fmt.Sprintf("http://%s", "127.0.0.1:8080"))
