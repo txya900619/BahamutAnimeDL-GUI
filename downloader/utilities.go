@@ -57,7 +57,7 @@ func parseTsToMp4(sn string, title string, episode string, spacial int64) {
 
 	savePath := "./download/" + title + "/" + title + " [" + episode + "]" + ".mp4"
 	if spacial == 1 {
-		savePath = "./download/" + title + "/" + title + " 特別篇[" + episode + "]" + ".mp4"
+		savePath = "./download/" + title + "/" + title + " 特別篇 [" + episode + "]" + ".mp4"
 	}
 
 	err := exec.Command("ffmpeg", "-y", "-i", "./.temp/"+sn+"/main.ts", "-c", "copy", savePath).Run()

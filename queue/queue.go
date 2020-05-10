@@ -3,10 +3,10 @@ package queue
 import (
 	"context"
 	"database/sql"
-	dbModel "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
+	dbModels "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
 	"github.com/txya900619/BahamutAnimeDL-GUI/downloader"
-	"github.com/volatiletech/sqlboiler/boil"
-	"github.com/volatiletech/sqlboiler/queries/qm"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"log"
 	"strconv"
 	"sync"
@@ -25,9 +25,9 @@ func New(db *sql.DB, maxDownloader int) *System {
 
 func (queue *System) Start() {
 	for {
-		if count, _ := dbModel.DownloadQueues(qm.Where("stop=? and downloading=?", 0, 0)).Count(context.Background(), queue.db); count > 0 {
+		if count, _ := dbModels.DownloadQueues(qm.Where("stop=? and downloading=?", 0, 0)).Count(context.Background(), queue.db); count > 0 {
 			if len(queue.stopper) < queue.maxDownloader {
-				toDownload, err := dbModel.DownloadQueues(qm.Where("stop=? and downloading=?", 0, 0), qm.OrderBy("sequence")).One(context.Background(), queue.db)
+				toDownload, err := dbModels.DownloadQueues(qm.Where("stop=? and downloading=?", 0, 0), qm.OrderBy("sequence")).One(context.Background(), queue.db)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -47,7 +47,7 @@ func (queue *System) newDownloader(sn string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	downloadingQueue, err := dbModel.FindDownloadQueue(context.Background(), queue.db, intSn)
+	downloadingQueue, err := dbModels.FindDownloadQueue(context.Background(), queue.db, intSn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func (queue *System) Stop(sn string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	downloadingQueue, err := dbModel.FindDownloadQueue(context.Background(), queue.db, intSn)
+	downloadingQueue, err := dbModels.FindDownloadQueue(context.Background(), queue.db, intSn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func (queue *System) ReStart(sn string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	downloadingQueue, err := dbModel.FindDownloadQueue(context.Background(), queue.db, intSn)
+	downloadingQueue, err := dbModels.FindDownloadQueue(context.Background(), queue.db, intSn)
 	if err != nil {
 		log.Fatal(err)
 	}

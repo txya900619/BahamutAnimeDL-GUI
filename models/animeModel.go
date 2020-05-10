@@ -13,6 +13,7 @@ type Anime struct {
 	Ref string `json:"ref"`
 }
 type Sn struct {
-	Sn     string `json:"sn"`
-	Number string `json:"number"`
+	Sn          string `json:"sn"`
+	Number      string `json:"number"`
+	CanDownload bool   `json:"canDownload"`
 }

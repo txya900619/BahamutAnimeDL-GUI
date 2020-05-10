@@ -13,7 +13,7 @@ import (
 	"github.com/txya900619/BahamutAnimeDL-GUI/models"
 	"github.com/txya900619/BahamutAnimeDL-GUI/queue"
 	"github.com/txya900619/BahamutAnimeDL-GUI/utilities"
-	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/zserge/lorca"
 	"log"
 	"net"
@@ -84,8 +84,8 @@ func main() {
 		return crawler.GetRealSn(ref)
 	})
 
-	app.Bind("getAnimeAllSn", func(sn string) map[string][]models.Sn {
-		return crawler.GetSnsByOneSn(sn)
+	app.Bind("getAnimeAllSn", func(title, sn string) map[string][]models.Sn {
+		return crawler.GetSnsByOneSn(title, sn, db)
 	})
 
 	app.Bind("insertAnimeToQueue", func(title, ep, sn string, spacial bool) {

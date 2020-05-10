@@ -3,8 +3,8 @@ package database
 import (
 	"context"
 	"database/sql"
-	dbModel "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
-	"github.com/volatiletech/sqlboiler/boil"
+	dbModels "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"strconv"
 )
 
@@ -15,7 +15,7 @@ func DeleteQueue(db *sql.DB, sn string) error {
 		return err
 	}
 
-	findQueue, err := dbModel.FindDownloadQueue(context.Background(), db, intSn)
+	findQueue, err := dbModels.FindDownloadQueue(context.Background(), db, intSn)
 	if err != nil {
 		return err
 	}
@@ -24,8 +24,8 @@ func DeleteQueue(db *sql.DB, sn string) error {
 	if err != nil {
 		return err
 	}
-	if count, _ := dbModel.DownloadQueues().Count(context.Background(), db); count >= 1 {
-		queues, err := dbModel.DownloadQueues().All(context.Background(), db)
+	if count, _ := dbModels.DownloadQueues().Count(context.Background(), db); count >= 1 {
+		queues, err := dbModels.DownloadQueues().All(context.Background(), db)
 		if err != nil {
 			return err
 		}
@@ -49,7 +49,7 @@ func QueueDisDownloading(db *sql.DB, sn string) error {
 		return err
 	}
 
-	findQueue, err := dbModel.FindDownloadQueue(context.Background(), db, intSn)
+	findQueue, err := dbModels.FindDownloadQueue(context.Background(), db, intSn)
 	if err != nil {
 		return err
 	}

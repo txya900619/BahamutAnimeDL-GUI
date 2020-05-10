@@ -2,10 +2,14 @@ package downloader
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/grafov/m3u8"
+	dbModels "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"io/ioutil"
+	"strconv"
 	"strings"
 )
 
@@ -55,6 +59,16 @@ func (client *animationDownloadClient) getAnimationChunkUrlsAndKey(resolution st
 				chunkUrls = append(chunkUrls, chunkUrlsPrefix+chunk.URI)
 			}
 		}
+	}
+	intSn, _ := strconv.ParseInt(client.sn, 10, 64)
+	downloadQueue, err := dbModels.FindDownloadQueue(context.Background(), client.DB, intSn)
+	if err != nil {
+		return nil, nil, err
+	}
+	downloadQueue.NumberOfChunk = int64(len(chunksListUrl))
+	_, err = downloadQueue.Update(context.Background(), client.DB, boil.Infer())
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return chunkUrls, key, nil

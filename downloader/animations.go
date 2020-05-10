@@ -5,9 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/txya900619/BahamutAnimeDL-GUI/database"
-	dbModel "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
-	"github.com/volatiletech/sqlboiler/boil"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,6 +14,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/txya900619/BahamutAnimeDL-GUI/database"
+	dbModels "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 func DownloadAnimation(sn string, stop *bool, wg *sync.WaitGroup) {
@@ -115,7 +116,7 @@ func (client *animationDownloadClient) combineChunk(chunkUrls []string) error {
 		rmMainDotTs(client.sn)
 		return err
 	}
-	findQueue, err := dbModel.FindDownloadQueue(context.Background(), client.DB, intSn)
+	findQueue, err := dbModels.FindDownloadQueue(context.Background(), client.DB, intSn)
 	if err != nil {
 		rmMainDotTs(client.sn)
 		return err
@@ -129,7 +130,7 @@ func (client *animationDownloadClient) combineChunk(chunkUrls []string) error {
 		return err
 	}
 
-	newDownloaded := dbModel.DownloadedAnimation{SN: intSn, Title: findQueue.Name, Episode: findQueue.Ep, Spacial: findQueue.Spacial}
+	newDownloaded := dbModels.DownloadedAnimation{SN: intSn, Title: findQueue.Name, Episode: findQueue.Ep, Spacial: findQueue.Spacial}
 	err = newDownloaded.Insert(context.Background(), client.DB, boil.Infer())
 	if err != nil {
 		rmMainDotTs(client.sn)

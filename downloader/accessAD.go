@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -39,7 +40,7 @@ func checkADStatus(client *animationDownloadClient) (bool, bool, error) {
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-
+	fmt.Println(string(body))
 	vip, err := strconv.ParseBool(strings.Split(strings.Split(string(body), "vip\":")[1], ",")[0])
 	if err != nil {
 		return false, false, err
