@@ -42,7 +42,7 @@ func getSnsByOneSnInOnePart(title, sn string, db *sql.DB) map[string][]models.Sn
 	})
 	c.Visit("https://ani.gamer.com.tw/animeVideo.php?sn=" + sn)
 	if len(Sns) == 0 {
-		Sns = append(Sns, models.Sn{Sn: sn, Number: "1"})
+		Sns = append(Sns, models.Sn{Sn: sn, Number: "1", CanDownload: true})
 	}
 	SnsOnePart[""] = Sns
 	return SnsOnePart
