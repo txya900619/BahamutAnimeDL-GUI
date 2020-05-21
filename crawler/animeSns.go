@@ -76,7 +76,12 @@ func getSnsByOneSnInTwoPart(title, sn string, db *sql.DB) map[string][]models.Sn
 
 			Sns = append(Sns, newSn)
 		})
-		SnsTwoPart[element.Text] = Sns
+		if element.Text == "本篇" {
+			SnsTwoPart["main"] = Sns
+		} else {
+			SnsTwoPart["special"] = Sns
+		}
+
 	})
 	c.Visit("https://ani.gamer.com.tw/animeVideo.php?sn=" + sn)
 	return SnsTwoPart
