@@ -20,6 +20,10 @@ type System struct {
 }
 
 func New(db *sql.DB, maxDownloader int) *System {
+	_, err := dbModels.DownloadQueues().UpdateAll(context.Background(), db, dbModels.M{"downloading": 0})
+	if err != nil {
+		log.Fatal(err)
+	}
 	return &System{db: db, stopper: make(map[string]*bool), maxDownloader: maxDownloader}
 }
 
