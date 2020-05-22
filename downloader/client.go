@@ -18,7 +18,7 @@ type animationDownloadClient struct {
 	stop     *bool
 }
 
-func newAnimationDownloadClient(sn string, stop *bool) *animationDownloadClient {
+func NewAnimationDownloadClient(sn string, stop *bool) *animationDownloadClient {
 	cookieJar, _ := cookiejar.New(nil)
 	db := database.ConnectSqlite()
 	newAnimationDownloadClient := &animationDownloadClient{

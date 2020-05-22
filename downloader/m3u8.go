@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-func (client *animationDownloadClient) getAnimationChunkUrlsAndKey(resolution string) ([]string, []byte, error) {
+func (client *animationDownloadClient) GetAnimationChunkUrlsAndKey(resolution string) ([]string, []byte, error) {
 	if *client.stop {
 		err := errors.New("stopped")
 		return nil, nil, err
@@ -135,7 +135,7 @@ func getAnimationM3u8Url(client *animationDownloadClient) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	m3u8ListUrl := "https:" + jsonParse["src"]
+	m3u8ListUrl := jsonParse["src"]
 
 	return m3u8ListUrl, nil
 }

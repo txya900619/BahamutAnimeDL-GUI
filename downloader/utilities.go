@@ -73,7 +73,7 @@ func parseTsToMp4(sn string, title string, episode string, spacial int64) {
 	}
 }
 
-func waitEightSec(complete chan<- bool, stop *bool) {
+func waitTwentySec(complete chan<- bool, stop *bool) {
 	end := make(chan struct{})
 	go func() {
 		for {
@@ -89,7 +89,7 @@ func waitEightSec(complete chan<- bool, stop *bool) {
 			}
 		}
 	}()
-	time.Sleep(8 * time.Second)
+	time.Sleep(20 * time.Second)
 	if *stop {
 		return
 	}

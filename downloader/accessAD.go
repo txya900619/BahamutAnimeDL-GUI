@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (client *animationDownloadClient) accessAD() error {
+func (client *animationDownloadClient) AccessAD() error {
 	if *client.stop {
 		err := errors.New("stopped")
 		return err
@@ -65,7 +65,7 @@ func seeAD(client *animationDownloadClient) error {
 	resp.Body.Close()
 
 	waitChan := make(chan bool)
-	go waitEightSec(waitChan, client.stop)
+	go waitTwentySec(waitChan, client.stop)
 	if !<-waitChan {
 		err := errors.New("stopped")
 		return err

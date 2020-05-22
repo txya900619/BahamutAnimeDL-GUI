@@ -25,9 +25,9 @@ func DownloadAnimation(sn string, stop *bool, wg *sync.WaitGroup) {
 
 	resolution := "720"
 	maxThreads := 32
-	animationDLClient := newAnimationDownloadClient(sn, stop)
+	animationDLClient := NewAnimationDownloadClient(sn, stop)
 
-	err := animationDLClient.accessAD()
+	err := animationDLClient.AccessAD()
 	if err != nil {
 		if err.Error() == "stopped" {
 			err := database.QueueDisDownloading(animationDLClient.DB, sn)
@@ -39,7 +39,7 @@ func DownloadAnimation(sn string, stop *bool, wg *sync.WaitGroup) {
 		log.Fatal(err)
 	}
 
-	chunkUrls, key, err := animationDLClient.getAnimationChunkUrlsAndKey(resolution)
+	chunkUrls, key, err := animationDLClient.GetAnimationChunkUrlsAndKey(resolution)
 	if err != nil {
 		if err.Error() == "stopped" {
 			err := database.QueueDisDownloading(animationDLClient.DB, sn)
