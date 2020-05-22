@@ -14,7 +14,9 @@ import (
 	"github.com/txya900619/BahamutAnimeDL-GUI/queue"
 	"github.com/txya900619/BahamutAnimeDL-GUI/utilities"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/zserge/lorca"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -103,6 +105,23 @@ func main() {
 		}
 		queue := dbModels.DownloadQueue{SN: intSn, Name: title, Ep: ep, Sequence: lastSequence + 1, Spacial: intSpacial}
 		err = queue.Insert(context.Background(), db, boil.Infer())
+	})
+
+	app.Bind("getDownloadQueue", func() models.QueueStatus {
+		queuesPtr, err := dbModels.DownloadQueues(qm.OrderBy("sequence")).All(context.Background(), db)
+		if err != nil {
+			log.Fatal(err)
+		}
+		queues := make([]dbModels.DownloadQueue, 0)
+		downloadStatus := make([]int, 0)
+		for _, queuePtr := range queuesPtr {
+			if queuePtr.Downloading == 1 {
+				files, _ := ioutil.ReadDir("./.temp/" + strconv.FormatInt(queuePtr.SN, 10))
+				downloadStatus = append(downloadStatus, len(files))
+			}
+			queues = append(queues, *queuePtr)
+		}
+		return models.QueueStatus{queues, downloadStatus}
 	})
 
 	net, err := net.Listen("tcp", "127.0.0.1:0")

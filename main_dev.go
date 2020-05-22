@@ -15,6 +15,7 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/zserge/lorca"
+	"io/ioutil"
 	"log"
 	"os"
 	"runtime"
@@ -26,11 +27,13 @@ var NewAnimeList []models.NewAnime
 var AnimeList []models.Anime
 var db *sql.DB
 var queueSystem *queue.System
+var maxDownloader int
 
 func init() {
 	db = database.ConnectSqlite()
 	NewAnimeList = crawler.GetNewAnimeList()
 	AnimeList = crawler.GetAllAnimeList()
+	maxDownloader = 1
 
 	if _, err := os.Stat("./.temp"); os.IsNotExist(err) {
 		os.Mkdir("./.temp", 0777)
@@ -39,7 +42,7 @@ func init() {
 		}
 	}
 
-	queueSystem = queue.New(db, 1)
+	queueSystem = queue.New(db, maxDownloader)
 	go queueSystem.Start()
 
 }
@@ -108,16 +111,21 @@ func main() {
 		return true
 	})
 
-	app.Bind("getDownloadQueue", func() []dbModels.DownloadQueue {
+	app.Bind("getDownloadQueue", func() models.QueueStatus {
 		queuesPtr, err := dbModels.DownloadQueues(qm.OrderBy("sequence")).All(context.Background(), db)
 		if err != nil {
 			log.Fatal(err)
 		}
 		queues := make([]dbModels.DownloadQueue, 0)
+		downloadStatus := make([]int, 0)
 		for _, queuePtr := range queuesPtr {
+			if queuePtr.Downloading == 1 {
+				files, _ := ioutil.ReadDir("./.temp/" + strconv.FormatInt(queuePtr.SN, 10))
+				downloadStatus = append(downloadStatus, len(files))
+			}
 			queues = append(queues, *queuePtr)
 		}
-		return queues
+		return models.QueueStatus{queues, downloadStatus}
 	})
 
 	app.Load(fmt.Sprintf("http://%s", "127.0.0.1:8080"))
