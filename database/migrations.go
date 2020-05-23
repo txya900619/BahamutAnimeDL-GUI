@@ -15,7 +15,7 @@ func migrations(db *sql.DB) {
 		fmt.Println(err)
 	}
 	migrationSource := &migrate.HttpFileSystemMigrationSource{
-		FileSystem: http.FileSystem(pkger.Dir(workingDir + "/migrations")),
+		FileSystem: http.FileSystem(pkger.Dir("/migrations")),
 	}
 	num, err := migrate.Exec(db, "sqlite3", migrationSource, migrate.Up)
 	if err != nil {
