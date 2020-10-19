@@ -40,21 +40,25 @@ func pkc5Unpadding(decryptedData []byte) []byte {
 	return decryptedData[:(dataLength - unPadding)]
 }
 
-func parseTsToMp4(sn string, title string, episode string) {
+func parseTsToMp4(sn string, title string, episode string, spacial int64) {
 	if _, err := os.Stat("download"); os.IsNotExist(err) {
-		err := os.Mkdir("download", os.ModeDir)
+		err := os.Mkdir("download", 0777)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	if _, err := os.Stat("./download/" + title); os.IsNotExist(err) {
-		err := os.Mkdir("./download/"+title, os.ModeDir)
+		err := os.Mkdir("./download/"+title, 0777)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	savePath := "./download/" + title + "/" + title + "[" + episode + "]" + ".mp4"
+
+	savePath := "./download/" + title + "/" + title + " [" + episode + "]" + ".mp4"
+	if spacial == 1 {
+		savePath = "./download/" + title + "/" + title + " 特別篇 [" + episode + "]" + ".mp4"
+	}
 
 	err := exec.Command("ffmpeg", "-y", "-i", "./.temp/"+sn+"/main.ts", "-c", "copy", savePath).Run()
 	if err != nil {
@@ -69,28 +73,28 @@ func parseTsToMp4(sn string, title string, episode string) {
 	}
 }
 
-func waitEightSec(complete chan bool, stop *bool) {
+func waitTwentySec(complete chan<- bool, stop *bool) {
 	end := make(chan struct{})
 	go func() {
-		select {
-		case <-end:
-			return
-		default:
-			if *stop {
-				complete <- false
-				close(end)
-				close(complete)
+		for {
+			select {
+			case <-end:
 				return
+			default:
+				if *stop {
+					complete <- false
+					close(end)
+					return
+				}
 			}
 		}
 	}()
-	time.Sleep(8 * time.Second)
+	time.Sleep(20 * time.Second)
 	if *stop {
 		return
 	}
 	close(end)
 	complete <- true
-	close(complete)
 }
 
 func rmMainDotTs(sn string) {
