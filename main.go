@@ -3,139 +3,112 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	"os"
-	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/markbates/pkger"
-	"github.com/txya900619/BahamutAnimeDL-GUI/crawler"
-	"github.com/txya900619/BahamutAnimeDL-GUI/database"
-	dbModels "github.com/txya900619/BahamutAnimeDL-GUI/database/models"
-	"github.com/txya900619/BahamutAnimeDL-GUI/models"
 	"github.com/txya900619/BahamutAnimeDL-GUI/queue"
-	"github.com/txya900619/BahamutAnimeDL-GUI/utilities"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/zserge/lorca"
+	"github.com/webview/webview"
 )
 
-var NewAnimeList []models.NewAnime
-var AnimeList []models.Anime
 var db *sql.DB
 var queueSystem *queue.System
 
-func init() {
-	db = database.ConnectSqlite()
-	NewAnimeList = crawler.GetNewAnimeList()
-	AnimeList = crawler.GetAllAnimeList()
+// func init() {
+// 	db = database.ConnectSqlite()
 
-	if _, err := os.Stat("./.temp"); os.IsNotExist(err) {
-		os.Mkdir("./.temp", 0777)
-		if runtime.GOOS == "windows" {
-			utilities.HideFolder("./.temp")
-		}
-	}
+// 	if _, err := os.Stat("./.temp"); os.IsNotExist(err) {
+// 		os.Mkdir("./.temp", 0777)
+// 		if runtime.GOOS == "windows" {
+// 			utilities.HideFolder("./.temp")
+// 		}
+// 	}
+// 	queueSystem = queue.New(db, 1)
+// 	go queueSystem.Start()
 
-	queueSystem = queue.New(db, 1)
-	go queueSystem.Start()
-}
+// }
 
 func main() {
-	args := []string{}
-	if runtime.GOOS == "linux" {
-		args = append(args, "--class=Lorca")
-	}
-	args = append(args, "--disable-features=TranslateUI")
+	app := webview.New(true)
+	defer app.Destroy()
+	app.SetSize(1200, 800, webview.HintNone)
+	app.SetTitle("")
+	// app.Bind("insertAnimeToQueue", func(title, ep, sn string, spacial bool) bool {
+	// 	//TODO: maybe test 18
 
-	app, err := lorca.New("", "", 1200, 800, args...)
+	// 	lastSequence, err := dbModels.DownloadQueues().Count(context.Background(), db)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	var intSpacial int64
+	// 	if spacial {
+	// 		intSpacial = 1
+	// 	}
+	// 	intSn, err := strconv.ParseInt(sn, 10, 64)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	downloadQueue := dbModels.DownloadQueue{SN: intSn, Name: title, Ep: ep, Sequence: lastSequence + 1, Spacial: intSpacial}
+	// 	err = downloadQueue.Insert(context.Background(), db, boil.Infer())
+	// 	return true
+	// })
+
+	// app.Bind("getDownloadQueue", func() models.QueueStatus {
+	// 	queuesPtr, err := dbModels.DownloadQueues(qm.OrderBy("sequence")).All(context.Background(), db)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	queues := make([]dbModels.DownloadQueue, 0)
+	// 	downloadStatus := make([]int, 0)
+	// 	for _, queuePtr := range queuesPtr {
+	// 		if queuePtr.Downloading == 1 {
+	// 			files, _ := ioutil.ReadDir("./.temp/" + strconv.FormatInt(queuePtr.SN, 10))
+	// 			downloadStatus = append(downloadStatus, len(files))
+	// 		}
+	// 		queues = append(queues, *queuePtr)
+	// 	}
+	// 	return models.QueueStatus{Queue: queues, DownloadingStatus: downloadStatus}
+	// })
+
+	listener, err := net.Listen("tcp", "127.0.0.1:8080")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer app.Close()
+	defer listener.Close()
 
-	app.Bind("getNewAnimeList", func() []models.NewAnime {
-		return NewAnimeList
-	})
+	serverMux := http.NewServeMux()
 
-	app.Bind("getAnimesByPage", func(page int) []models.Anime {
-		return AnimeList[(page-1)*18 : page*18]
-	})
-	app.Bind("getMaxPage", func() int {
-		return len(AnimeList)/18 + 1
-	})
-
-	app.Bind("getAnimesByFilter", func(filter string) []models.Anime {
-		filter = strings.ToLower(filter)
-		filteredAnimes := make([]models.Anime, 0)
-		for _, v := range AnimeList {
-			if strings.Contains(strings.ToLower(v.Title), filter) {
-				filteredAnimes = append(filteredAnimes, v)
+	serverMux.Handle("/", http.FileServer(pkger.Dir("/dist")))
+	serverMux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		url := strings.Replace(r.URL.Path, "/api", "https://api.gamer.com.tw/mobile_app", -1)
+		var res *http.Response
+		if r.Method == http.MethodGet {
+			res, err = http.Get(url)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
 			}
 		}
-		return filteredAnimes
-	})
+		//TODO: POST method
 
-	app.Bind("getRealSn", func(ref string) string {
-		return crawler.GetRealSn(ref)
-	})
-
-	app.Bind("getAnimeAllSn", func(title, sn string) map[string][]models.Sn {
-		return crawler.GetSnsByOneSn(title, sn, db)
-	})
-
-	app.Bind("insertAnimeToQueue", func(title, ep, sn string, spacial bool) bool {
-		if crawler.Check18Up(sn) {
-			return false
-		}
-		lastSequence, err := dbModels.DownloadQueues().Count(context.Background(), db)
+		resBody, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			log.Fatal(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
-		var intSpacial int64
-		if spacial {
-			intSpacial = 1
-		}
-		intSn, err := strconv.ParseInt(sn, 10, 64)
-		if err != nil {
-			log.Fatal(err)
-		}
-		queue := dbModels.DownloadQueue{SN: intSn, Name: title, Ep: ep, Sequence: lastSequence + 1, Spacial: intSpacial}
-		err = queue.Insert(context.Background(), db, boil.Infer())
-		return true
+
+		w.WriteHeader(res.StatusCode)
+		w.Write(resBody)
 	})
 
-	app.Bind("getDownloadQueue", func() models.QueueStatus {
-		queuesPtr, err := dbModels.DownloadQueues(qm.OrderBy("sequence")).All(context.Background(), db)
-		if err != nil {
-			log.Fatal(err)
-		}
-		queues := make([]dbModels.DownloadQueue, 0)
-		downloadStatus := make([]int, 0)
-		for _, queuePtr := range queuesPtr {
-			if queuePtr.Downloading == 1 {
-				files, _ := ioutil.ReadDir("./.temp/" + strconv.FormatInt(queuePtr.SN, 10))
-				downloadStatus = append(downloadStatus, len(files))
-			}
-			queues = append(queues, *queuePtr)
-		}
-		return models.QueueStatus{queues, downloadStatus}
-	})
+	go http.Serve(listener, serverMux)
 
-	net, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer net.Close()
+	app.Navigate(fmt.Sprintf("http://%s", listener.Addr()))
+	app.Run()
 
-	go http.Serve(net, http.FileServer(pkger.Dir("/dist")))
-	app.Load(fmt.Sprintf("http://%s", net.Addr()))
-	<-app.Done()
 }
